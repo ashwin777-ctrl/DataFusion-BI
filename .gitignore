@@ -1,0 +1,29 @@
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# data & analytical stores
+storage/
+*.duckdb
+*.duckdb.wal
+*.parquet
+
+# logs & os
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# test artifacts
+playwright-report/
+test-results/
+coverage/
