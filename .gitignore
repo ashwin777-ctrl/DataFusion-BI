@@ -17,6 +17,10 @@ storage/
 *.duckdb.wal
 *.parquet
 
+# self-contained dev postgres (downloaded binaries + local cluster data — never commit)
+.pgsql/
+.pgdata/
+
 # logs & os
 *.log
 npm-debug.log*
@@ -27,3 +31,7 @@ Thumbs.db
 playwright-report/
 test-results/
 coverage/
+
+# local scratch & build info
+.scratch/
+*.tsbuildinfo

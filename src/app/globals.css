@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Token system — DESIGN.md §3. Single source of truth for chrome + chart color.
+ * Chrome tokens are HSL triplets consumed via Tailwind `hsl(var(--x))`.
+ * Chart tokens (--viz-*) are raw hex consumed directly by the chart layer.
+ * Every value here was validated: chrome via WCAG contrast computation, chart
+ * palette via scripts/validate_palette.js. Do not hand-edit a color without
+ * re-running the relevant check.
+ */
+
+@layer base {
+  :root {
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo,
+      monospace;
+
+    /* ---- Neutrals & surfaces (light) ---- */
+    --plane: 60 14.3% 97.3%;
+    --surface-1: 60 14.3% 98.6%;
+    --surface-2: 0 0% 100%;
+    --surface-sunken: 45 13.3% 94.1%;
+
+    --background: var(--surface-1);
+    --foreground: 0 0% 4.3%;
+    --card: var(--surface-1);
+    --card-foreground: 0 0% 4.3%;
+    --popover: var(--surface-2);
+    --popover-foreground: 0 0% 4.3%;
+
+    /* text roles */
+    --secondary-foreground: 45 2.5% 31.4%; /* #52514e — 7.7:1 */
+    --muted-foreground: 45 3.8% 41.6%; /* #6e6c66 — 5.11:1 (corrected from #898781) */
+
+    /* ---- Action / interactive (light) ---- */
+    --primary: 0 0% 4.3%; /* near-black action, not a brand hue (P1) */
+    --primary-foreground: 60 14.3% 98.6%;
+    --secondary: 45 13.3% 94.1%;
+    --muted: 45 13.3% 94.1%;
+    --accent: 213 67.7% 50.2%; /* interactive blue */
+    --accent-foreground: 0 0% 100%;
+    --link: 216 68% 39.2%;
+
+    --destructive: 0 59.1% 44.1%; /* #b32e2e — 6.27:1 on white */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 53 11.8% 86.7%;
+    --border-strong: 55 9.1% 74.1%;
+    --input: 55 9.1% 74.1%;
+    --ring: 213 67.7% 50.2%;
+
+    /* ---- Status (fixed, never themed) ---- */
+    --status-good: 120 86.3% 34.3%;
+    --status-warning: 41 95.7% 53.9%;
+    --status-serious: 17 79.3% 63.9%;
+    --status-critical: 0 61.3% 52.4%;
+
+    /* ---- Radius / elevation ---- */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --elev-1: 0 1px 2px rgba(11, 11, 11, 0.06);
+    --elev-2: 0 8px 24px rgba(11, 11, 11, 0.12);
+
+    /* ---- Chart palette (validated, light) — DESIGN.md §3.4 / references/palette.md ---- */
+    --viz-surface: #fcfcfb;
+    --viz-1: #2a78d6;
+    --viz-2: #eb6834;
+    --viz-3: #1baf7a;
+    --viz-4: #eda100;
+    --viz-5: #e87ba4;
+    --viz-6: #008300;
+    --viz-7: #4a3aa7;
+    --viz-8: #e34948;
+    --viz-grid: #e1e0d9;
+    --viz-axis: #c3c2b7;
+    --viz-text: #6e6c66;
+    /* sequential blue ramp (magnitude) */
+    --viz-seq-100: #cde2fb;
+    --viz-seq-300: #6da7ec;
+    --viz-seq-500: #256abf;
+    --viz-seq-700: #0d366b;
+    /* diverging poles + neutral midpoint */
+    --viz-div-neg: #2a78d6;
+    --viz-div-mid: #f0efec;
+    --viz-div-pos: #d03b3b;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --plane: 0 0% 5.1%;
+    --surface-1: 60 2% 10%;
+    --surface-2: 60 1.4% 13.5%;
+    --surface-sunken: 60 3% 6.5%;
+
+    --background: var(--surface-1);
+    --foreground: 0 0% 100%;
+    --card: var(--surface-1);
+    --card-foreground: 0 0% 100%;
+    --popover: var(--surface-2);
+    --popover-foreground: 0 0% 100%;
+
+    --secondary-foreground: 55 9.1% 74.1%; /* #c3c2b7 — 9.7:1 */
+    --muted-foreground: 50 5.6% 58%; /* #9a988e — 6.02:1 */
+
+    --primary: 60 14.3% 98.6%;
+    --primary-foreground: 0 0% 4.3%;
+    --secondary: 60 3% 6.5%;
+    --muted: 60 3% 6.5%;
+    --accent: 213 76.8% 56.1%;
+    --accent-foreground: 0 0% 100%;
+    --link: 213 77% 67.6%;
+
+    --destructive: 0 61.3% 52.4%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 60 2.3% 16.9%;
+    --border-strong: 60 2.8% 21.4%;
+    --input: 60 2.8% 21.4%;
+    --ring: 213 76.8% 56.1%;
+
+    /* status stays fixed; dark surface clears 3:1 for all four */
+
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+    /* ---- Chart palette (validated, dark) ---- */
+    --viz-surface: #1a1a19;
+    --viz-1: #3987e5;
+    --viz-2: #d95926;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+    --viz-5: #d55181;
+    --viz-6: #008300;
+    --viz-7: #9085e9;
+    --viz-8: #e66767;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+    --viz-text: #9a988e;
+    --viz-seq-100: #0d366b;
+    --viz-seq-300: #256abf;
+    --viz-seq-500: #6da7ec;
+    --viz-seq-700: #cde2fb;
+    --viz-div-neg: #3987e5;
+    --viz-div-mid: #383835;
+    --viz-div-pos: #e66767;
+
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-plane text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tabular figures only where digits must align vertically (DESIGN.md §3.5) */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Visible focus on every focusable (DESIGN.md §10) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Loading skeleton shimmer (respects reduced-motion below) */
+  .skeleton {
+    @apply rounded-sm bg-surface-sunken;
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--surface-sunken)) 0%,
+      hsl(var(--muted) / 0.6) 50%,
+      hsl(var(--surface-sunken)) 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton {
+    animation: none;
+    background-image: none;
+  }
+}
