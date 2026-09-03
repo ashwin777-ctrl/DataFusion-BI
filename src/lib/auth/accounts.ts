@@ -34,9 +34,21 @@ const EMAIL_TAKEN = "EMAIL_TAKEN";
 const SLUG_MAX_TRIES = 6;
 
 function pgCode(e: unknown): string | undefined {
-  return typeof e === "object" && e !== null && "code" in e
-    ? String((e as { code?: unknown }).code)
-    : undefined;
+  if (typeof e !== "object" || e === null) return undefined;
+  if ("code" in e && typeof (e as { code: unknown }).code === "string") {
+    return (e as { code: string }).code;
+  }
+  if (
+    "cause" in e &&
+    typeof (e as { cause: unknown }).cause === "object" &&
+    (e as { cause: unknown }).cause !== null
+  ) {
+    const cause = (e as { cause: Record<string, unknown> }).cause;
+    if ("code" in cause && typeof cause.code === "string") {
+      return cause.code;
+    }
+  }
+  return undefined;
 }
 
 /**

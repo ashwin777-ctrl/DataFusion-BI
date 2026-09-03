@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Upload,
@@ -304,9 +303,9 @@ export default function SourcesPage() {
       {/* Quick Upload Drop Area */}
       <div
         onClick={() => fileInputRef.current?.click()}
-        className="group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-8 text-center transition-all hover:border-primary/50 hover:bg-muted/30"
+        className="group relative flex cursor-pointer flex-col items-center justify-center stitch-card border-2 border-dashed border-cyan-500/30 p-8 text-center transition-all hover:border-cyan-400/60 hover:shadow-[0_0_24px_rgba(56,189,248,0.15)]"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 transition-transform group-hover:scale-110 shadow-sm">
           <FileSpreadsheet className="h-6 w-6" />
         </div>
         <h3 className="mt-3 text-base font-semibold text-foreground">Upload Spreadsheet or Data Table</h3>
@@ -314,10 +313,10 @@ export default function SourcesPage() {
           Drag & drop Excel (.xlsx, .xls) or CSV/TSV files up to 100 MB. We automatically detect column types, dates, measures, and statistics.
         </p>
         <div className="mt-4 flex items-center gap-2">
-          <Badge variant="outline" className="text-[11px]">.xlsx</Badge>
-          <Badge variant="outline" className="text-[11px]">.xls</Badge>
-          <Badge variant="outline" className="text-[11px]">.csv</Badge>
-          <Badge variant="outline" className="text-[11px]">Multi-sheet</Badge>
+          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.xlsx</Badge>
+          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.xls</Badge>
+          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.csv</Badge>
+          <Badge variant="outline" className="text-[11px] border-emerald-500/30 text-emerald-400 bg-emerald-500/5">Multi-sheet</Badge>
         </div>
       </div>
 
@@ -325,10 +324,10 @@ export default function SourcesPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Layers className="h-5 w-5 text-muted-foreground" />
+            <Layers className="h-5 w-5 text-cyan-400" />
             Configured Sources ({sources.length})
           </h2>
-          <Button variant="ghost" size="sm" onClick={loadSources} className="gap-1 text-xs">
+          <Button variant="ghost" size="sm" onClick={loadSources} className="gap-1 text-xs text-muted-foreground hover:text-cyan-400">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -337,16 +336,16 @@ export default function SourcesPage() {
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 rounded-xl border border-border bg-card animate-pulse" />
+              <div key={i} className="h-44 stitch-card animate-pulse" />
             ))}
           </div>
         ) : sources.length === 0 ? (
-          <Card className="p-8 text-center">
+          <div className="stitch-card p-8 text-center">
             <p className="text-sm text-muted-foreground">No data sources connected yet.</p>
             <p className="text-xs text-muted-foreground mt-1">
               Upload an Excel workbook or click &quot;Load Sample Enterprise Dataset&quot; to test.
             </p>
-          </Card>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sources.map((src) => {
@@ -354,30 +353,30 @@ export default function SourcesPage() {
               const sizeKb = src.parquetBytes ? (src.parquetBytes / 1024).toFixed(1) : "—";
 
               return (
-                <Card key={src.id} className="relative group overflow-hidden border-border hover:border-primary/40 transition-all hover:shadow-md">
-                  <CardHeader className="p-5 pb-3">
+                <div key={src.id} className="stitch-card p-5 group flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+                  <div>
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className={`p-2 rounded-lg ${isPg ? "bg-blue-500/10 text-blue-600" : "bg-emerald-500/10 text-emerald-600"}`}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`p-2 rounded-lg ${isPg ? "bg-blue-500/15 text-cyan-400 border border-cyan-500/20" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"}`}>
                           {isPg ? <Database className="h-5 w-5" /> : <FileSpreadsheet className="h-5 w-5" />}
                         </div>
                         <div className="min-w-0">
-                          <CardTitle className="text-base truncate font-semibold">
+                          <h3 className="text-base truncate font-semibold text-foreground group-hover:text-cyan-400 transition-colors">
                             {src.alias}
-                          </CardTitle>
-                          <CardDescription className="text-xs truncate">
+                          </h3>
+                          <p className="text-xs truncate text-muted-foreground font-mono">
                             {isPg ? `Table: ${src.tableName}` : `Sheet: ${src.sheetName || "Default"}`}
-                          </CardDescription>
+                          </p>
                         </div>
                       </div>
 
-                      <Badge variant={isPg ? "info" : "success"} className="text-[10px] capitalize shrink-0">
+                      <Badge variant={isPg ? "info" : "success"} className="text-[10px] uppercase font-mono tracking-wider shrink-0">
                         {isPg ? "PostgreSQL" : "Excel/CSV"}
                       </Badge>
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent className="p-5 pt-0 space-y-3">
+                  <div className="p-5 pt-0 space-y-3">
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
                       <div>
                         <span className="text-muted-foreground block text-[11px]">Rows</span>
@@ -413,8 +412,8 @@ export default function SourcesPage() {
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -423,11 +422,18 @@ export default function SourcesPage() {
 
       {/* PostgreSQL Modal */}
       {showPgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl space-y-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPgModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+        >
+          <div className="w-full max-w-lg stitch-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-blue-500" />
+                <Database className="h-5 w-5 text-cyan-400" />
                 <h3 className="text-lg font-bold text-foreground">Connect PostgreSQL Database</h3>
               </div>
               <button

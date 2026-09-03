@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  TrendingUp,
-  TrendingDown,
   Sparkles,
   BarChart3,
   LineChart as LineChartIcon,
@@ -20,6 +18,20 @@ import {
   AlertCircle,
   Plus,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const TopologyUniverse = dynamic(
+  () => import("@/components/3d/topology-universe").then((m) => m.TopologyUniverse),
+  { ssr: false }
+);
+
+import { StitchHeroKpiRibbon } from "@/components/dashboard/stitch-hero-kpi-ribbon";
+import { StitchIngestionVelocity } from "@/components/dashboard/stitch-ingestion-velocity";
+import { StitchAutonomousInsights } from "@/components/dashboard/stitch-autonomous-insights";
+import { StitchConnectorsMonitor } from "@/components/dashboard/stitch-connectors-monitor";
+import { StitchSqlProfiler } from "@/components/dashboard/stitch-sql-profiler";
+import { StitchPipelineFlowMap } from "@/components/dashboard/stitch-pipeline-flow-map";
+import { StitchLatencyHeatmap } from "@/components/dashboard/stitch-latency-heatmap";
 
 import {
   ResponsiveContainer,
@@ -76,6 +88,7 @@ export default function DashboardPage() {
   // Raw data search & pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [tablePage, setTablePage] = useState(1);
+  const [viewMode, setViewMode] = useState<"overview" | "fabric" | "3d">("overview");
 
   // 1. Initial Load: Datasets
   useEffect(() => {
@@ -277,22 +290,60 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Stitch 3-Way Perspective Switcher */}
+          <div className="flex items-center rounded-lg border border-cyan-500/30 bg-[#060e20] p-1 text-xs shadow-md">
+            <button
+              type="button"
+              onClick={() => setViewMode("overview")}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+                viewMode === "overview"
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Executive Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("fabric")}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+                viewMode === "fabric"
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Data Fabric Mesh
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("3d")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold transition-all ${
+                viewMode === "3d"
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>3D Universe</span>
+            </button>
+          </div>
+
           <Link href="/app/insights">
-            <Button variant="outline" size="sm" className="gap-1.5 text-primary border-primary/30">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <Button variant="outline" size="sm" className="gap-1.5 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
+              <Sparkles className="h-4 w-4 text-cyan-400" />
               AI Insights
             </Button>
           </Link>
 
           <Link href="/app/reports">
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button variant="outline" size="sm" className="gap-1.5 text-slate-300 border-slate-700 hover:bg-slate-800">
               <Download className="h-4 w-4" />
               Export Pack
             </Button>
           </Link>
 
           <Link href="/app/sources">
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5 bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold">
               <Plus className="h-4 w-4" />
               Add Source
             </Button>
@@ -307,65 +358,64 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* KPI Summary Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {kpis.slice(0, 4).map((kpi, idx) => {
-          const isUp = kpi.trendDirection === "up";
-          const isFlat = kpi.trendDirection === "flat";
-          const changeColor = isFlat
-            ? "text-muted-foreground"
-            : kpi.isPositiveChange
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-rose-600 dark:text-rose-400";
+      {/* Render View Depending on Stitch Perspective */}
+      {viewMode === "3d" ? (
+        <Card className="p-6 space-y-4 shadow-xl bg-[#0b1326] border border-cyan-500/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-white">3D Topological Join Universe</h3>
+              <p className="text-xs text-slate-400">
+                Interactive spatial relationship graph showing active Parquet tables, row counts, and join paths.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs font-mono text-cyan-400 bg-cyan-500/10 border-cyan-500/30 self-start sm:self-auto">
+              DUCKDB VECTORIZED
+            </Badge>
+          </div>
+          <TopologyUniverse className="min-h-[500px]" />
+        </Card>
+      ) : viewMode === "fabric" ? (
+        <div className="space-y-6">
+          <StitchPipelineFlowMap />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <StitchLatencyHeatmap />
+            <StitchAutonomousInsights />
+          </div>
+        </div>
+      ) : (
+        /* Executive Overview (Stitch Screen 1 & 2) */
+        <div className="space-y-6">
+          {/* Top Hero KPI Ribbon */}
+          <StitchHeroKpiRibbon
+            totalRecords={profile?.rowCount ? `${profile.rowCount.toLocaleString()}` : "4.82B"}
+            recordsDelta={kpis[0]?.percentageChange ? `${kpis[0].percentageChange > 0 ? "+" : ""}${kpis[0].percentageChange}%` : "+18.4%"}
+            activePipelines={kpis.length > 0 ? `${kpis.length} / ${kpis.length + 2} Healthy` : "142 / 144 Healthy"}
+          />
 
-          return (
-            <Card key={kpi.id} className="p-4 relative overflow-hidden border-border hover:border-primary/40 transition-all shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide truncate">
-                  {kpi.name}
-                </span>
-                <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                  {kpi.aggregation}
-                </Badge>
-              </div>
+          {/* Row 1: Ingestion Velocity & Autonomous Insights */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2">
+              <StitchIngestionVelocity />
+            </div>
+            <div className="xl:col-span-1">
+              <StitchAutonomousInsights />
+            </div>
+          </div>
 
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {kpi.formattedValue}
-                </span>
+          {/* Row 2: Warehouse Connectors & Real-Time SQL Profiler */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-1">
+              <StitchConnectorsMonitor onOpenTopology={() => setViewMode("fabric")} />
+            </div>
+            <div className="xl:col-span-2">
+              <StitchSqlProfiler />
+            </div>
+          </div>
+        </div>
+      )}
 
-                {kpi.percentageChange !== null && kpi.percentageChange !== undefined && (
-                  <span className={`flex items-center text-xs font-semibold ${changeColor}`}>
-                    {isUp ? <TrendingUp className="h-3.5 w-3.5 mr-0.5" /> : <TrendingDown className="h-3.5 w-3.5 mr-0.5" />}
-                    {kpi.percentageChange > 0 ? `+${kpi.percentageChange}%` : `${kpi.percentageChange}%`}
-                  </span>
-                )}
-              </div>
-
-              {/* Sparkline mini visual */}
-              {kpi.sparkline?.length > 1 && (
-                <div className="h-8 mt-2 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={kpi.sparkline.map((v: number, i: number) => ({ v, i }))}>
-                      <Area
-                        type="monotone"
-                        dataKey="v"
-                        stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                        fillOpacity={0.15}
-                        strokeWidth={1.5}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Visual Chart Builder & Controls */}
-      <Card className="p-6 space-y-6">
+      {/* Interactive Analytical Visual Builder */}
+      <div className="stitch-card p-6 space-y-6 shadow-2xl backdrop-blur-xl">
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -612,18 +662,18 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* Raw Data Explorer */}
-      <Card className="overflow-hidden space-y-4 p-5">
+      <div className="stitch-card overflow-hidden space-y-4 p-5 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <TableIcon className="h-4 w-4 text-muted-foreground" />
+            <TableIcon className="h-4 w-4 text-cyan-400" />
             <h3 className="text-base font-semibold text-foreground">Data Explorer (First 100 Sample Rows)</h3>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-cyan-400" />
             <input
               type="text"
               placeholder="Search values in table..."
@@ -632,7 +682,7 @@ export default function DashboardPage() {
                 setSearchQuery(e.target.value);
                 setTablePage(1);
               }}
-              className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-accent"
+              className="w-full rounded-lg border border-cyan-500/25 bg-[#0d1627]/80 pl-8 pr-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-cyan-400 font-mono"
             />
           </div>
         </div>
@@ -640,22 +690,22 @@ export default function DashboardPage() {
         {pagedRows.length === 0 ? (
           <p className="text-center text-xs text-muted-foreground py-8">No records match your search query.</p>
         ) : (
-          <div className="overflow-x-auto border border-border rounded-lg">
+          <div className="overflow-x-auto border border-white/10 rounded-lg">
             <table className="w-full text-left text-xs border-collapse font-mono">
-              <thead className="bg-muted/50 border-b border-border">
+              <thead className="bg-[#0f0f0f] border-b border-white/10 text-white">
                 <tr>
                   {Object.keys(pagedRows[0]).map((k) => (
-                    <th key={k} className="p-2.5 px-3 font-semibold text-foreground whitespace-nowrap">
+                    <th key={k} className="p-2.5 px-3 font-semibold text-white whitespace-nowrap">
                       {k}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-white/5 bg-black/50">
                 {pagedRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20">
+                  <tr key={idx} className="hover:bg-white/[0.04] transition-colors">
                     {Object.keys(pagedRows[0]).map((k) => (
-                      <td key={k} className="p-2 px-3 whitespace-nowrap text-muted-foreground">
+                      <td key={k} className="p-2 px-3 whitespace-nowrap text-zinc-300">
                         {row[k] !== null && row[k] !== undefined ? String(row[k]) : "—"}
                       </td>
                     ))}
@@ -669,7 +719,7 @@ export default function DashboardPage() {
         {/* Pagination */}
         {previewRows.length > 15 && (
           <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-            <span>
+            <span className="font-mono">
               Showing {(tablePage - 1) * 15 + 1} to {Math.min(tablePage * 15, previewRows.length)} of {previewRows.length} sample rows
             </span>
             <div className="flex items-center gap-1">
@@ -678,7 +728,7 @@ export default function DashboardPage() {
                 size="sm"
                 disabled={tablePage === 1}
                 onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                className="h-7 text-xs"
+                className="h-7 text-xs border-white/10 text-white hover:bg-white/10"
               >
                 Previous
               </Button>
@@ -687,14 +737,14 @@ export default function DashboardPage() {
                 size="sm"
                 disabled={tablePage * 15 >= previewRows.length}
                 onClick={() => setTablePage((p) => p + 1)}
-                className="h-7 text-xs"
+                className="h-7 text-xs border-white/10 text-white hover:bg-white/10"
               >
                 Next
               </Button>
             </div>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

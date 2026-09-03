@@ -24,19 +24,32 @@ export interface RemoteTableInfo {
   columns: Array<{ name: string; type: string; isNullable: boolean }>;
 }
 
+function resolvePgSsl(config: PgConnectionConfig) {
+  if (config.ssl === false || config.ssl === "disable") return false;
+  if (config.ssl === true || config.ssl === "require") return { rejectUnauthorized: false };
+  const isLocal =
+    config.host === "localhost" ||
+    config.host === "127.0.0.1" ||
+    config.host === "::1" ||
+    config.host.startsWith("192.168.") ||
+    config.host.startsWith("10.");
+  return isLocal ? false : { rejectUnauthorized: false };
+}
+
 /**
  * Test an external PostgreSQL database connection with strict timeout.
  */
 export async function testPostgresConnection(
   config: PgConnectionConfig,
-): Promise<{ ok: boolean; version?: string; error?: string }> {
+): Promise<{ ok: boolean; version?: string; latencyMs?: number; error?: string }> {
+  const start = Date.now();
   const client = new Client({
     host: config.host,
     port: config.port || 5432,
     database: config.database,
     user: config.user,
     password: config.password,
-    ssl: config.ssl === false || config.ssl === "disable" ? false : { rejectUnauthorized: false },
+    ssl: resolvePgSsl(config),
     connectionTimeoutMillis: 5000,
     statement_timeout: 5000,
   });
@@ -44,7 +57,8 @@ export async function testPostgresConnection(
   try {
     await client.connect();
     const res = await client.query("SHOW server_version");
-    return { ok: true, version: res.rows[0]?.server_version };
+    const latencyMs = Date.now() - start;
+    return { ok: true, version: res.rows[0]?.server_version, latencyMs };
   } catch (err: any) {
     return { ok: false, error: err.message || "Failed to connect to database" };
   } finally {
@@ -63,8 +77,8 @@ export async function listPostgresTables(
     port: config.port || 5432,
     database: config.database,
     user: config.user,
-    password: config.password,
-    ssl: config.ssl === false || config.ssl === "disable" ? false : { rejectUnauthorized: false },
+    password: config.password != null ? String(config.password) : "",
+    ssl: resolvePgSsl(config),
     connectionTimeoutMillis: 5000,
     statement_timeout: 10000,
   });
@@ -154,8 +168,8 @@ export async function ingestPostgresTable(params: {
     port: config.port || 5432,
     database: config.database,
     user: config.user,
-    password: config.password,
-    ssl: config.ssl === false || config.ssl === "disable" ? false : { rejectUnauthorized: false },
+    password: config.password != null ? String(config.password) : "",
+    ssl: resolvePgSsl(config),
     connectionTimeoutMillis: 10000,
     statement_timeout: 60000,
   });

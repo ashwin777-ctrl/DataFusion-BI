@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
@@ -179,7 +178,7 @@ export default function PrepPage() {
       )}
 
       {/* Model Name */}
-      <Card className="p-5">
+      <div className="stitch-card p-5">
         <label className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
           Consolidated Dataset Name
         </label>
@@ -189,10 +188,10 @@ export default function PrepPage() {
           onChange={(e) => setDatasetName(e.target.value)}
           className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold"
         />
-      </Card>
+      </div>
 
       {/* Step 1: Select Sources */}
-      <Card className="p-6 space-y-4">
+      <div className="stitch-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-foreground">1. Select Sources to Consolidate</h2>
@@ -263,11 +262,11 @@ export default function PrepPage() {
             })}
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Step 2: Configure Joins */}
       {selectedSourceIds.length >= 2 && (
-        <Card className="p-6 space-y-4">
+        <div className="stitch-card p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">2. Relationship & Join Definition</h2>
@@ -416,7 +415,7 @@ export default function PrepPage() {
               })}
             </div>
           )}
-        </Card>
+        </div>
       )}
     </div>
   );

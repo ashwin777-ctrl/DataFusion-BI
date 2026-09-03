@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AETHER 3D — Spatial Experience & Interactive Platform</title>
+  <meta name="description" content="An immersive WebGL 3D spatial web experience featuring dynamic thematic transitions, kinetic typography, and real-time interactive navigation.">
+  <meta name="keywords" content="Three.js, WebGL, 3D Website, Interactive, Dark Mode, Kinetic Design">
+  <meta name="author" content="Aether Studio">
+  
+  <!-- OpenGraph Meta Tags -->
+  <meta property="og:title" content="AETHER 3D — Spatial Experience">
+  <meta property="og:description" content="Next-generation 3D spatial web application with seamless theme transitions and camera-driven navigation.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts: Syne & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Three.js and TWEEN.js CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+  <!-- Screen Reader Live Region -->
+  <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Loading Screen Overlay -->
+  <div id="loading-screen" class="loading-overlay" aria-hidden="true">
+    <div class="loader-content">
+      <div class="quantum-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-core"></div>
+      </div>
+      <h2 class="loader-title">AETHER STUDIO</h2>
+      <p class="loader-status">Initializing WebGL Engine & Spatial Assets...</p>
+      <div class="progress-bar-container">
+        <div id="loader-progress" class="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="webgl-container" aria-hidden="true"></div>
+
+  <!-- Accessible WebGL Fallback Notification (Hidden by default unless WebGL fails) -->
+  <div id="webgl-fallback" class="webgl-fallback-banner" style="display: none;" role="alert">
+    <p>WebGL hardware acceleration is disabled or unsupported. Falling back to the accessible 2D interface.</p>
+  </div>
+
+  <!-- Persistent Top Navigation Bar -->
+  <header class="app-header" role="banner">
+    <div class="nav-container">
+      <a href="#hero" class="brand-link" data-section="hero" aria-label="Aether Studio Homepage">
+        <span class="brand-icon">✧</span>
+        <span class="brand-name">AETHER<span class="brand-accent">3D</span></span>
+      </a>
+
+      <!-- 3D Spatial Navigation Menu -->
+      <nav class="desktop-nav" role="navigation" aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><button type="button" class="nav-btn active" data-section="hero">Home</button></li>
+          <li><button type="button" class="nav-btn" data-section="about">About</button></li>
+          <li><button type="button" class="nav-btn" data-section="services">Services</button></li>
+          <li><button type="button" class="nav-btn" data-section="portfolio">Work</button></li>
+          <li><button type="button" class="nav-btn" data-section="testimonials">Clients</button></li>
+          <li><button type="button" class="nav-btn" data-section="contact">Contact</button></li>
+        </ul>
+      </nav>
+
+      <!-- Theme Controls & Quick Actions -->
+      <div class="nav-actions">
+        <!-- 3-Way Theme Switcher (System, Light, Dark) -->
+        <div class="theme-switcher-pill" role="radiogroup" aria-label="Appearance Theme Selection">
+          <button type="button" class="theme-btn" data-mode="light" title="Switch to Light Theme" aria-label="Light mode">
+            <svg class="theme-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button type="button" class="theme-btn" data-mode="system" title="Match System Theme" aria-label="System mode">
+            <svg class="theme-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </button>
+          <button type="button" class="theme-btn" data-mode="dark" title="Switch to Dark Theme" aria-label="Dark mode">
+            <svg class="theme-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          </button>
+        </div>
+
+        <button type="button" class="cta-pill-btn" data-section="contact">
+          <span>Get in Touch</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <!-- Mobile Menu Toggle -->
+        <button type="button" class="mobile-menu-toggle" id="mobile-toggle" aria-expanded="false" aria-controls="mobile-nav-drawer" aria-label="Open navigation menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-nav-drawer" class="mobile-nav-drawer" aria-hidden="true">
+      <ul class="mobile-nav-links">
+        <li><button type="button" class="mobile-nav-btn active" data-section="hero">01. Home</button></li>
+        <li><button type="button" class="mobile-nav-btn" data-section="about">02. About Studio</button></li>
+        <li><button type="button" class="mobile-nav-btn" data-section="services">03. Capabilities</button></li>
+        <li><button type="button" class="mobile-nav-btn" data-section="portfolio">04. Selected Work</button></li>
+        <li><button type="button" class="mobile-nav-btn" data-section="testimonials">05. Testimonials</button></li>
+        <li><button type="button" class="mobile-nav-btn" data-section="contact">06. Start Project</button></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Interactive 3D Camera Floating HUD Navigator -->
+  <aside class="spatial-hud" aria-label="Spatial Coordinates Navigation">
+    <div class="hud-track">
+      <div class="hud-indicator" id="hud-indicator"></div>
+      <button type="button" class="hud-dot active" data-section="hero" title="Sector 01: Prime Hero" aria-label="Navigate to Hero section"><span>01</span></button>
+      <button type="button" class="hud-dot" data-section="about" title="Sector 02: About" aria-label="Navigate to About section"><span>02</span></button>
+      <button type="button" class="hud-dot" data-section="services" title="Sector 03: Capabilities" aria-label="Navigate to Services section"><span>03</span></button>
+      <button type="button" class="hud-dot" data-section="portfolio" title="Sector 04: Portfolio" aria-label="Navigate to Portfolio section"><span>04</span></button>
+      <button type="button" class="hud-dot" data-section="testimonials" title="Sector 05: Proof" aria-label="Navigate to Testimonials section"><span>05</span></button>
+      <button type="button" class="hud-dot" data-section="contact" title="Sector 06: Terminal" aria-label="Navigate to Contact section"><span>06</span></button>
+    </div>
+    <div class="hud-legend">
+      <span class="hud-coords" id="hud-coordinates">X: 0.00 Y: 0.00 Z: 18.00</span>
+    </div>
+  </aside>
+
+  <!-- Keyboard Controls Helper Badge -->
+  <div class="keyboard-hints" aria-hidden="true">
+    <span class="kbd-badge">Keys [1–6]</span> Fast Warp · <span class="kbd-badge">Drag</span> Orbit View · <span class="kbd-badge">Scroll</span> Glide
+  </div>
+
+  <!-- Content Layer (Synchronized Spatial Overlay) -->
+  <main class="spatial-content-viewport" id="main-content">
+    
+    <!-- 01. HERO SECTION -->
+    <section id="section-hero" class="spatial-section active" data-index="0" aria-labelledby="hero-heading">
+      <div class="section-card hero-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>SPATIAL COMPUTING & HIGH-PERFORMANCE WEB</span>
+        </div>
+        <h1 id="hero-heading" class="hero-title">
+          Engineering the <span class="text-gradient">3D Frontier</span> of Digital Reality.
+        </h1>
+        <p class="hero-description">
+          Aether merges WebGL rendering pipelines, in-process analytical power, and kinetic design systems into fluid, tactile spatial experiences.
+        </p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary" data-section="services">
+            <span>Explore Capabilities</span>
+            <span class="btn-icon">⚡</span>
+          </button>
+          <button type="button" class="btn btn-secondary" data-section="portfolio">
+            <span>View 3D Works</span>
+          </button>
+        </div>
+        <div class="hero-stats-row">
+          <div class="stat-item">
+            <span class="stat-num">60<span class="stat-unit">FPS</span></span>
+            <span class="stat-label">Vectorized Target</span>
+          </div>
+          <div class="stat-separator"></div>
+          <div class="stat-item">
+            <span class="stat-num">&lt;2<span class="stat-unit">ms</span></span>
+            <span class="stat-label">Spatial Interaction</span>
+          </div>
+          <div class="stat-separator"></div>
+          <div class="stat-item">
+            <span class="stat-num">100<span class="stat-unit">%</span></span>
+            <span class="stat-label">Accessible WCAG AA</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02. ABOUT SECTION -->
+    <section id="section-about" class="spatial-section" data-index="1" aria-labelledby="about-heading">
+      <div class="section-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>STUDIO MANIFESTO</span>
+        </div>
+        <h2 id="about-heading" class="section-title">Bridging Cinematic Depth and Enterprise Rigor</h2>
+        <p class="section-lead">
+          We reject the dogma that 3D experiences must compromise speed, accessibility, or mobile ergonomics. Our engine orchestrates single-context WebGL shaders alongside strict semantic HTML.
+        </p>
+        
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">💎</div>
+            <h3 class="feature-title">Volumetric Precision</h3>
+            <p class="feature-text">Custom PBR materials, instanced particle arrays, and camera depth-of-field calculated entirely client-side with minimal memory overhead.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3 class="feature-title">Universal Fallback</h3>
+            <p class="feature-text">Integrated progressive enhancement. Devices with strict GPU policies smoothly downgrade to hardware-accelerated CSS 3D perspective.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚖️</div>
+            <h3 class="feature-title">Adaptive Theming</h3>
+            <p class="feature-text">Synchronized light-transport modeling: scene lighting, ambient occlusion, and emissive colors automatically morph in real time when toggling modes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03. SERVICES SECTION -->
+    <section id="section-services" class="spatial-section" data-index="2" aria-labelledby="services-heading">
+      <div class="section-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>CORE CAPABILITIES</span>
+        </div>
+        <h2 id="services-heading" class="section-title">Specialized Engineering Disciplines</h2>
+        <p class="section-lead">Click or interact with the 3D rotating capability prisms in the scene to inspect each discipline.</p>
+
+        <div class="services-columns">
+          <div class="service-panel" data-object-target="service-1">
+            <div class="service-header">
+              <span class="service-num">01</span>
+              <h3 class="service-name">Spatial 3D Environments</h3>
+            </div>
+            <p class="service-desc">Complete interactive 3D web platforms built on Three.js, WebGL2, and custom GLSL vertex/fragment shaders designed for 60fps responsiveness.</p>
+            <ul class="service-tags">
+              <li>Three.js</li>
+              <li>InstancedMesh</li>
+              <li>Shader Material</li>
+            </ul>
+          </div>
+
+          <div class="service-panel" data-object-target="service-2">
+            <div class="service-header">
+              <span class="service-num">02</span>
+              <h3 class="service-name">High-Density BI & Visual Analytics</h3>
+            </div>
+            <p class="service-desc">In-process columnar data exploration (DuckDB, Parquet) mapped to interactive multidimensional scatter, topological join graphs, and real-time KPI feeds.</p>
+            <ul class="service-tags">
+              <li>DuckDB OLAP</li>
+              <li>Topology Graphs</li>
+              <li>Data Lineage</li>
+            </ul>
+          </div>
+
+          <div class="service-panel" data-object-target="service-3">
+            <div class="service-header">
+              <span class="service-num">03</span>
+              <h3 class="service-name">Kinetic Design Systems</h3>
+              <span class="badge-accent">Featured</span>
+            </div>
+            <p class="service-desc">Tokens architectures blending smooth CSS variables, 6DoF micro-tilt feedback, spring-based physics, and seamless dark/light transitions.</p>
+            <ul class="service-tags">
+              <li>Design Tokens</li>
+              <li>Micro-interactions</li>
+              <li>WCAG 2.1 AA</li>
+            </ul>
+          </div>
+
+          <div class="service-panel" data-object-target="service-4">
+            <div class="service-header">
+              <span class="service-num">04</span>
+              <h3 class="service-name">Autonomous Agent Pipelines</h3>
+            </div>
+            <p class="service-desc">Agentic infrastructure integration utilizing Model Context Protocol (MCP), Tree-sitter knowledge graphs, and multi-disciplinary AI specialized squads.</p>
+            <ul class="service-tags">
+              <li>MCP Servers</li>
+              <li>Knowledge Graphs</li>
+              <li>Workflow Automation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04. PORTFOLIO SECTION -->
+    <section id="section-portfolio" class="spatial-section" data-index="3" aria-labelledby="portfolio-heading">
+      <div class="section-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>SELECTED WORKS</span>
+        </div>
+        <h2 id="portfolio-heading" class="section-title">Spatial Work Showcase</h2>
+        <p class="section-lead">Explore representative productions featuring real-time WebGL rendering and deep architectural integration.</p>
+
+        <div class="portfolio-grid">
+          <article class="project-card">
+            <div class="project-preview preview-gradient-1">
+              <div class="project-overlay">
+                <span class="project-cat">Spatial Data</span>
+                <h3 class="project-title">DataFusion OLAP Engine</h3>
+              </div>
+            </div>
+            <div class="project-info">
+              <p class="project-summary">Embedded DuckDB columnar engine processing 1M+ rows in-process with automated schema inference and multi-dimensional spatial scatter.</p>
+              <div class="project-tech">
+                <span>Next.js 15</span>
+                <span>DuckDB</span>
+                <span>WebGL</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="project-card">
+            <div class="project-preview preview-gradient-2">
+              <div class="project-overlay">
+                <span class="project-cat">Graph Intelligence</span>
+                <h3 class="project-title">Graft Blast-Radius Tracer</h3>
+              </div>
+            </div>
+            <div class="project-info">
+              <p class="project-summary">Codebase dependency graph analyzing transitive impact of code commits with interactive 3D network force diagrams.</p>
+              <div class="project-tech">
+                <span>Tree-Sitter</span>
+                <span>TypeScript</span>
+                <span>Three.js</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="project-card">
+            <div class="project-preview preview-gradient-3">
+              <div class="project-overlay">
+                <span class="project-cat">Agentic Audio-Visual</span>
+                <h3 class="project-title">OpenMontage Video Studio</h3>
+              </div>
+            </div>
+            <div class="project-info">
+              <p class="project-summary">Multi-agent timeline orchestration connecting generative diffusion models, speech phoneme clocks, and FFmpeg assembly.</p>
+              <div class="project-tech">
+                <span>AI Pipelines</span>
+                <span>WebCodecs</span>
+                <span>Remotion</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05. TESTIMONIALS SECTION -->
+    <section id="section-testimonials" class="spatial-section" data-index="4" aria-labelledby="testimonials-heading">
+      <div class="section-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>VERIFIED FEEDBACK</span>
+        </div>
+        <h2 id="testimonials-heading" class="section-title">Trusted by Engineering & Design Teams</h2>
+        
+        <div class="testimonials-deck">
+          <blockquote class="testimonial-card">
+            <p class="testimonial-quote">
+              “The fluidity of the camera choreography and the speed of the 3D scene completely transformed how our stakeholders perceive our data products. Unrivaled polish.”
+            </p>
+            <footer class="testimonial-author">
+              <div class="avatar-ring">EK</div>
+              <div class="author-details">
+                <cite class="author-name">Elena Rostova</cite>
+                <span class="author-role">VP of Product Architecture, CloudSphere</span>
+              </div>
+            </footer>
+          </blockquote>
+
+          <blockquote class="testimonial-card">
+            <p class="testimonial-quote">
+              “Flawless theme harmonization. Having the 3D scene lighting, materials, and background naturally adapt between light and dark without hitching is a masterclass in modern web engineering.”
+            </p>
+            <footer class="testimonial-author">
+              <div class="avatar-ring">DC</div>
+              <div class="author-details">
+                <cite class="author-name">David Chen</cite>
+                <span class="author-role">Principal Creative Technologist, NeoForm Studio</span>
+              </div>
+            </footer>
+          </blockquote>
+
+          <blockquote class="testimonial-card">
+            <p class="testimonial-quote">
+              “The fact that screen readers and keyboard navigation work seamlessly over a complex WebGL canvas shows the depth of thought put into accessibility.”
+            </p>
+            <footer class="testimonial-author">
+              <div class="avatar-ring">ST</div>
+              <div class="author-details">
+                <cite class="author-name">Sarah Thorne</cite>
+                <span class="author-role">Head of Design Systems, Apex Global</span>
+              </div>
+            </footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06. CONTACT SECTION -->
+    <section id="section-contact" class="spatial-section" data-index="5" aria-labelledby="contact-heading">
+      <div class="section-card contact-card">
+        <div class="card-badge">
+          <span class="badge-dot"></span>
+          <span>INITIATE PROJECT</span>
+        </div>
+        <h2 id="contact-heading" class="section-title">Let’s Build Something Immersive</h2>
+        <p class="section-lead">Send us your project parameters or request a private 3D architecture audit. We respond within 24 hours.</p>
+
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-name">Your Full Name <span class="required">*</span></label>
+              <input type="text" id="form-name" name="name" placeholder="e.g. Maya Lin" required autocomplete="name">
+              <span class="field-error" id="name-error"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="form-email">Work Email Address <span class="required">*</span></label>
+              <input type="email" id="form-email" name="email" placeholder="maya@enterprise.com" required autocomplete="email">
+              <span class="field-error" id="email-error"></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-service">Primary Area of Interest</label>
+            <select id="form-service" name="service">
+              <option value="spatial-3d">Spatial 3D Web Application</option>
+              <option value="bi-analytics">Enterprise 3D Analytics & Dashboard</option>
+              <option value="design-system">Kinetic Design System & Rebranding</option>
+              <option value="agentic-pipeline">AI Autonomous Agent Integration</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-message">Project Scope & Objectives <span class="required">*</span></label>
+            <textarea id="form-message" name="message" rows="4" placeholder="Briefly describe your vision, target timeline, and technical constraints..." required></textarea>
+            <span class="field-error" id="message-error"></span>
+          </div>
+
+          <div class="form-footer">
+            <button type="submit" class="btn btn-primary btn-submit" id="submit-btn">
+              <span class="btn-text">Transmit Message</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span class="btn-icon">⚡</span>
+            </button>
+            <p class="privacy-note">Zero spam. Encrypted transmission. Confidentiality protected.</p>
+          </div>
+
+          <div id="form-alert" class="form-alert" role="status" aria-live="polite" style="display: none;"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <span class="brand-name">AETHER<span class="brand-accent">3D</span></span>
+        <p class="footer-tagline">Spatial Computing & High-Performance Web Architectures.</p>
+      </div>
+      <div class="footer-col footer-links">
+        <button type="button" class="footer-link" data-section="hero">Home</button>
+        <button type="button" class="footer-link" data-section="about">About</button>
+        <button type="button" class="footer-link" data-section="services">Services</button>
+        <button type="button" class="footer-link" data-section="portfolio">Work</button>
+        <button type="button" class="footer-link" data-section="contact">Contact</button>
+      </div>
+      <div class="footer-col footer-meta">
+        <p>© 2026 Aether Studio. All systems operational.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -21,7 +21,6 @@ import * as schema from "./schema";
 
 declare global {
   // Reuse the pool across HMR reloads in dev.
-  // eslint-disable-next-line no-var
   var __biPool: Pool | undefined;
 }
 

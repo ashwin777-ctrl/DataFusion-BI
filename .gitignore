@@ -35,3 +35,5 @@ coverage/
 # local scratch & build info
 .scratch/
 *.tsbuildinfo
+.playwright-mcp/
+/*.png

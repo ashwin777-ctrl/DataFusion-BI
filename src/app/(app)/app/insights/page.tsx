@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
@@ -131,57 +130,57 @@ export default function InsightsPage() {
       ) : (
         <div className="space-y-6">
           {/* Executive Summary Card */}
-          <Card className="border-accent/30 bg-accent/5 p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-accent font-semibold text-sm mb-2">
+          <div className="stitch-card p-6 shadow-xl">
+            <div className="flex items-center gap-2 text-white font-semibold text-sm mb-2">
               <Target className="h-4 w-4" />
-              <span>Executive Briefing</span>
+              <span className="font-mono uppercase tracking-wider text-xs">Autonomous Executive Briefing</span>
             </div>
             <p className="text-sm font-medium text-foreground leading-relaxed">
               {report.executiveSummary}
             </p>
 
-            <div className="mt-4 pt-4 border-t border-accent/15 grid sm:grid-cols-3 gap-4 text-xs">
+            <div className="mt-4 pt-4 border-t border-slate-800/80 grid sm:grid-cols-3 gap-4 text-xs">
               <div>
                 <span className="text-muted-foreground block text-[11px]">Total Transactions Evaluated</span>
-                <span className="font-bold text-foreground text-sm">
+                <span className="font-bold text-foreground text-sm font-mono">
                   {report.dataQualitySummary?.totalRows?.toLocaleString() ?? "—"}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[11px]">Data Completeness Index</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                <span className="font-bold text-emerald-400 text-sm font-mono">
                   {report.dataQualitySummary?.completenessPercentage}%
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[11px]">Actionable Signals Detected</span>
-                <span className="font-bold text-accent text-sm">
+                <span className="font-bold text-cyan-400 text-sm font-mono">
                   {report.insights?.length ?? 0}
                 </span>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Key Findings List */}
-          <Card className="p-6 space-y-3">
+          <div className="stitch-card p-6 space-y-3">
             <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <Lightbulb className="h-4 w-4 text-amber-400" />
               Core Analytical Findings
             </h2>
             <div className="grid sm:grid-cols-2 gap-3 pt-1">
               {report.keyFindings?.map((finding: string, idx: number) => (
-                <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg border border-border bg-card text-xs text-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg border border-cyan-500/20 bg-[#0d1627]/80 text-xs text-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{finding}</span>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
           {/* Detailed Strategic Insights Cards */}
           <div className="space-y-4">
             <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <Layers className="h-4 w-4 text-muted-foreground" />
+              <Layers className="h-4 w-4 text-cyan-400" />
               Strategic Opportunities & Risk Drivers ({report.insights?.length || 0})
             </h2>
 
@@ -194,10 +193,10 @@ export default function InsightsPage() {
                 const badgeVariant = isOpp ? "success" : isRisk ? "destructive" : isAnomaly ? "warning" : "default";
 
                 return (
-                  <Card key={item.id} className="p-5 flex flex-col justify-between space-y-4 border-border hover:border-primary/40 transition-all shadow-sm">
+                  <div key={item.id} className="stitch-card p-5 flex flex-col justify-between space-y-4 hover:border-cyan-500/40 transition-all shadow-lg">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <Badge variant={badgeVariant} className="text-[10px] uppercase tracking-wider">
+                        <Badge variant={badgeVariant} className="text-[10px] uppercase font-mono tracking-wider">
                           {item.category}
                         </Badge>
                         <span className="text-[11px] text-muted-foreground font-mono">
@@ -215,14 +214,14 @@ export default function InsightsPage() {
                     </div>
 
                     {item.recommendation && (
-                      <div className="rounded-lg bg-muted/60 p-3 text-xs border border-border">
-                        <strong className="text-foreground block mb-0.5 flex items-center gap-1 font-semibold">
-                          <ArrowRight className="h-3 w-3 text-accent" /> Recommended Action:
+                      <div className="rounded-lg bg-[#0d1627]/90 p-3 text-xs border border-cyan-500/20">
+                        <strong className="text-cyan-300 block mb-0.5 flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider font-mono">
+                          <ArrowRight className="h-3 w-3 text-cyan-400" /> Recommended Action:
                         </strong>
-                        <span className="text-muted-foreground leading-relaxed">{item.recommendation}</span>
+                        <span className="text-slate-300 leading-relaxed">{item.recommendation}</span>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 );
               })}
             </div>
