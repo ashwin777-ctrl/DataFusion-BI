@@ -193,13 +193,13 @@ export async function POST() {
           orgId,
           datasetId,
           leftSourceId: ordersSrc.id,
-          leftColumns: [\"product_id\"],
+          leftColumns: ["product_id"],
           rightSourceId: productsSrc.id,
-          rightColumns: [\"product_id\"],
-          joinType: \"left\",
-          cardinality: \"N:1\",
+          rightColumns: ["product_id"],
+          joinType: "left",
+          cardinality: "N:1",
           confidence: 1.0,
-          origin: \"inferred\",
+          origin: "inferred",
           isEnabled: true,
           userConfirmedAt: new Date(),
         },
@@ -208,13 +208,13 @@ export async function POST() {
           orgId,
           datasetId,
           leftSourceId: ordersSrc.id,
-          leftColumns: [\"customer_id\"],
+          leftColumns: ["customer_id"],
           rightSourceId: customersSrc.id,
-          rightColumns: [\"customer_id\"],
-          joinType: \"left\",
-          cardinality: \"N:1\",
+          rightColumns: ["customer_id"],
+          joinType: "left",
+          cardinality: "N:1",
           confidence: 1.0,
-          origin: \"inferred\",
+          origin: "inferred",
           isEnabled: true,
           userConfirmedAt: new Date(),
         },
@@ -223,16 +223,16 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: \"Sample enterprise dataset and consolidated model created successfully\",
+      message: "Sample enterprise dataset and consolidated model created successfully",
       datasetId,
       sourcesCount: createdSources.length,
       rowCount: consolidationRes.profile.rowCount,
       profile: consolidationRes.profile,
     });
   } catch (err: any) {
-    console.error(\"Sample dataset load error:\", err);
+    console.error("Sample dataset load error:", err);
     return NextResponse.json(
-      { error: err.message || \"Failed to load sample dataset\" },
+      { error: err.message || "Failed to load sample dataset" },
       { status: 500 },
     );
   }
