@@ -81,6 +81,14 @@ export async function createSession(params: {
   return { token, expiresAt };
 }
 
+// Short-lived in-memory cache (15s) to eliminate redundant database roundtrips across rapid parallel API requests
+const SESSION_CACHE = new Map<string, { session: ResolvedSession; cachedUntil: number }>();
+
+export function invalidateSessionCache(token: string) {
+  const tokenHash = hashToken(token);
+  SESSION_CACHE.delete(tokenHash);
+}
+
 /**
  * Resolve a raw token to the full session, or null if it is unknown, revoked,
  * expired, or belongs to a soft-deleted user. A stale active_org_id (the user was
@@ -90,6 +98,13 @@ export async function resolveSessionByToken(
   token: string,
 ): Promise<ResolvedSession | null> {
   const tokenHash = hashToken(token);
+  const now = Date.now();
+
+  const cached = SESSION_CACHE.get(tokenHash);
+  if (cached && cached.cachedUntil > now) {
+    return cached.session;
+  }
+
   const row = await unscoped(async (db) => {
     const rows = await db
       .select({
@@ -109,27 +124,40 @@ export async function resolveSessionByToken(
     return rows[0] ?? null;
   });
 
-  if (!row) return null;
-  if (row.revokedAt) return null;
-  if (row.userDeletedAt) return null;
-  if (row.expiresAt.getTime() <= Date.now()) return null;
+  if (!row) {
+    SESSION_CACHE.delete(tokenHash);
+    return null;
+  }
+  if (row.revokedAt || row.userDeletedAt || row.expiresAt.getTime() <= now) {
+    SESSION_CACHE.delete(tokenHash);
+    return null;
+  }
 
   const memberships = await listUserOrgs(row.userId);
   const activeOrg =
     (row.activeOrgId && memberships.find((m) => m.id === row.activeOrgId)) ||
     null;
 
-  return {
+  const session: ResolvedSession = {
     user: { id: row.userId, email: row.email, name: row.name },
     sessionId: row.sessionId,
     activeOrgId: activeOrg ? activeOrg.id : null,
     memberships,
     activeOrg,
   };
+
+  // Cache for 15 seconds (or until cookie expires)
+  SESSION_CACHE.set(tokenHash, {
+    session,
+    cachedUntil: Math.min(now + 15_000, row.expiresAt.getTime()),
+  });
+
+  return session;
 }
 
 /** Revoke a session by its raw token (logout). Idempotent. */
 export async function revokeSessionByToken(token: string): Promise<void> {
+  invalidateSessionCache(token);
   const tokenHash = hashToken(token);
   await unscoped((db) =>
     db
@@ -151,6 +179,10 @@ export async function setActiveOrg(params: {
 }): Promise<boolean> {
   const orgs = await listUserOrgs(params.userId);
   if (!orgs.some((o) => o.id === params.orgId)) return false;
+
+  // Clear in-memory cache so next resolution picks up the new active org
+  SESSION_CACHE.clear();
+
   await unscoped((db) =>
     db
       .update(schema.sessions)

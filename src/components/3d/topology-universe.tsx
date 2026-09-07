@@ -143,6 +143,8 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     container.addEventListener("mousemove", onMouseMove);
     container.addEventListener("click", onClick);
 
+    const targetMeshes = meshMap.map((m) => m.mesh);
+
     const onResize = () => {
       if (!container) return;
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -151,9 +153,17 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     };
     window.addEventListener("resize", onResize);
 
+    // Pause rendering when scrolled out of view
+    let isVisible = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting);
+    }, { threshold: 0.05 });
+    observer.observe(container);
+
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      if (!isVisible) return;
 
       graphGroup.rotation.y += 0.003;
       meshMap.forEach((m, idx) => {
@@ -163,7 +173,7 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
 
       // Pointer glow
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(meshMap.map((m) => m.mesh));
+      const hits = raycaster.intersectObjects(targetMeshes);
       container.style.cursor = hits.length > 0 ? "pointer" : "default";
 
       renderer.render(scene, camera);
@@ -172,6 +182,7 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
 
     return () => {
       cancelAnimationFrame(animId);
+      observer.disconnect();
       window.removeEventListener("resize", onResize);
       container.removeEventListener("mousemove", onMouseMove);
       container.removeEventListener("click", onClick);

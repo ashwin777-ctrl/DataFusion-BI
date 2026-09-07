@@ -137,7 +137,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     });
 
     // --- 5. Data Flow Particles (Streams into/out of Core) ---
-    const particleCount = 650;
+    const particleCount = 200;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
     const particleTargets = new Float32Array(particleCount * 3);
@@ -182,11 +182,15 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     const particleSystem = new THREE.Points(particleGeo, particleMat);
     scene.add(particleSystem);
 
+    // Pre-allocate mesh list for raycasting (avoid 60fps GC pressure)
+    const nodeMeshes = nodes.map((n) => n.mesh);
+
     // --- 6. Raycasting & Mouse Interaction ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2(-999, -999);
     let targetCameraX = 0;
     let targetCameraY = 1.2;
+    let currentHoveredLabel: string | null = null;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
@@ -199,7 +203,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
 
     const handleClick = () => {
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(nodes.map((n) => n.mesh));
+      const intersects = raycaster.intersectObjects(nodeMeshes);
       if (intersects.length > 0 && intersects[0]) {
         const hit = intersects[0].object;
         if (hit.userData.id && onNodeClick) {
@@ -220,10 +224,18 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     };
     window.addEventListener("resize", handleResize);
 
+    // Pause animation when scrolled off-screen
+    let isVisible = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting);
+    }, { threshold: 0.05 });
+    observer.observe(container);
+
     // --- 7. Animation Loop ---
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      if (!isVisible) return;
 
       if (!reducedMotion) {
         // Gentle rotation of core
@@ -276,14 +288,21 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
         posAttr.needsUpdate = true;
       }
 
-      // Check hover
+      // Check hover (only trigger React state update when value actually changes)
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(nodes.map((n) => n.mesh));
+      const intersects = raycaster.intersectObjects(nodeMeshes);
       if (intersects.length > 0 && intersects[0]) {
-        setHoveredNode(intersects[0].object.userData.label);
+        const label = intersects[0].object.userData.label;
+        if (currentHoveredLabel !== label) {
+          currentHoveredLabel = label;
+          setHoveredNode(label);
+        }
         container.style.cursor = "pointer";
       } else {
-        setHoveredNode(null);
+        if (currentHoveredLabel !== null) {
+          currentHoveredLabel = null;
+          setHoveredNode(null);
+        }
         container.style.cursor = "default";
       }
 
@@ -294,6 +313,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
 
     return () => {
       cancelAnimationFrame(animId);
+      observer.disconnect();
       window.removeEventListener("resize", handleResize);
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("click", handleClick);
