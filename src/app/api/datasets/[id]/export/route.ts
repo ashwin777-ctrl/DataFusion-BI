@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 import { generateDatasetInsights } from "@/lib/engine/insights";
@@ -19,7 +19,7 @@ export async function POST(
     const { id: datasetId } = await params;
 
     const body = await req.json();
-    const { format, filterSql } = body as { format: "pdf" | "xlsx" | "csv"; filterSql?: string };
+    const { format = "csv", filterSql } = body as { format?: "pdf" | "xlsx" | "csv"; filterSql?: string };
 
     const dataset = await withOrg(orgId, async (db) => {
       const res = await db
@@ -35,6 +35,7 @@ export async function POST(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
+    await ensureStorageBlob(parquetPath);
 
     if (format === "csv") {
       const csvBuffer = await withDuckDB(async (conn) => {

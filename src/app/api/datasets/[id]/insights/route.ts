@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 import { generateDatasetInsights } from "@/lib/engine/insights";
@@ -31,6 +31,7 @@ export async function GET(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
+    await ensureStorageBlob(parquetPath);
 
     const report = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);

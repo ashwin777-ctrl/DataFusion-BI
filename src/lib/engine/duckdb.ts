@@ -1,6 +1,7 @@
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
-import { existsSync, mkdirSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync, statSync } from "node:fs";
+import { resolve, join, dirname, basename } from "node:path";
+import { pool } from "@/lib/db";
 
 /**
  * Embedded DuckDB analytical engine (PRD §4 / FR-3.1).
@@ -9,6 +10,109 @@ import { resolve, join } from "node:path";
  */
 
 let instancePromise: Promise<DuckDBInstance> | null = null;
+
+/**
+ * Persist a file buffer to PostgreSQL storage_blobs so it survives serverless cold starts.
+ */
+export async function persistStorageBlob(filePath: string, buffer: Buffer): Promise<void> {
+  const norm = filePath.replace(/\\/g, "/");
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO storage_blobs (path, content, byte_size, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (path) DO UPDATE SET content = EXCLUDED.content, byte_size = EXCLUDED.byte_size, updated_at = NOW()`,
+        [norm, buffer, buffer.byteLength],
+      );
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("Failed to persist storage blob to PostgreSQL:", err);
+  }
+}
+
+/**
+ * Ensure a file exists on the local filesystem. If missing (e.g. fresh serverless container),
+ * restores it from PostgreSQL storage_blobs.
+ */
+export async function ensureStorageBlob(filePath: string): Promise<boolean> {
+  if (!filePath) return false;
+  const norm = filePath.replace(/\\/g, "/");
+
+  if (existsSync(norm)) {
+    try {
+      if (statSync(norm).size > 0) return true;
+    } catch {
+      // stat failed, fall through to fetch from db
+    }
+  }
+
+  try {
+    const client = await pool.connect();
+    try {
+      const fileName = basename(norm);
+      const res = await client.query(
+        `SELECT content FROM storage_blobs WHERE path = $1 OR path LIKE $2 LIMIT 1`,
+        [norm, `%${fileName}`],
+      );
+
+      if (res.rows.length > 0 && res.rows[0]?.content) {
+        const dir = dirname(norm);
+        if (!existsSync(dir)) {
+          mkdirSync(dir, { recursive: true });
+        }
+        writeFileSync(norm, res.rows[0].content);
+        return true;
+      }
+
+      // If not found in storage_blobs and path is a dataset parquet, try to find the source parquet
+      if (norm.includes("/datasets/")) {
+        const datasetIdMatch = norm.match(/\/datasets\/([a-f0-9-]+)\.parquet/i);
+        if (datasetIdMatch && datasetIdMatch[1]) {
+          const dsId = datasetIdMatch[1];
+          const dsRow = await client.query(
+            `SELECT fact_source_id, org_id FROM datasets WHERE id = $1 LIMIT 1`,
+            [dsId],
+          );
+          if (dsRow.rows.length > 0 && dsRow.rows[0]?.fact_source_id) {
+            const factSourceId = dsRow.rows[0].fact_source_id;
+            const srcRow = await client.query(
+              `SELECT parquet_path FROM sources WHERE id = $1 LIMIT 1`,
+              [factSourceId],
+            );
+            if (srcRow.rows.length > 0 && srcRow.rows[0]?.parquet_path) {
+              const srcParquet = srcRow.rows[0].parquet_path;
+              const srcRes = await client.query(
+                `SELECT content FROM storage_blobs WHERE path = $1 OR path LIKE $2 LIMIT 1`,
+                [srcParquet, `%${basename(srcParquet)}`],
+              );
+              if (srcRes.rows.length > 0 && srcRes.rows[0]?.content) {
+                const dir = dirname(norm);
+                if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+                writeFileSync(norm, srcRes.rows[0].content);
+                await client.query(
+                  `INSERT INTO storage_blobs (path, content, byte_size, updated_at)
+                   VALUES ($1, $2, $3, NOW())
+                   ON CONFLICT (path) DO NOTHING`,
+                  [norm, srcRes.rows[0].content, srcRes.rows[0].content.length],
+                );
+                return true;
+              }
+            }
+          }
+        }
+      }
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("Failed to restore storage blob from PostgreSQL:", err);
+  }
+
+  return existsSync(norm);
+}
 
 export function getStorageRoot(): string {
   let root = process.env.STORAGE_DIR;

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 
@@ -15,8 +15,9 @@ export async function GET(
   try {
     const { orgId } = await requireOrg();
     const { id: datasetId } = await params;
-    const filterSql = req.nextUrl.searchParams.get("filterSql") || undefined;
-    const dateColumn = req.nextUrl.searchParams.get("dateColumn") || undefined;
+    const { searchParams } = new URL(req.url);
+    const filterSql = searchParams.get("filter") || undefined;
+    const dateColumn = searchParams.get("dateColumn") || undefined;
 
     const dataset = await withOrg(orgId, async (db) => {
       const res = await db
@@ -32,6 +33,7 @@ export async function GET(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
+    await ensureStorageBlob(parquetPath);
 
     const kpis = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);
@@ -76,6 +78,7 @@ export async function POST(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
+    await ensureStorageBlob(parquetPath);
 
     const kpis = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);

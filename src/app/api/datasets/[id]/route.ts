@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, queryDuckDB, getDatasetParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, queryDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { existsSync, unlinkSync } from "node:fs";
 
@@ -30,7 +30,8 @@ export async function GET(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
-    if (!existsSync(parquetPath)) {
+    const hasBlob = await ensureStorageBlob(parquetPath);
+    if (!hasBlob || !existsSync(parquetPath)) {
       return NextResponse.json(
         { error: "Dataset storage file not found" },
         { status: 404 },
