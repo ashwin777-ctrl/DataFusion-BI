@@ -18,6 +18,29 @@ const defaultOrigin = process.env.APP_ORIGIN
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000";
 
+const SUPABASE_CLOUD_URL =
+  "postgresql://postgres.ipeibuxcwsejijkpgjiy:QAZJpO5k66bOv9qb@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres";
+
+const isCloudOrProd = Boolean(process.env.VERCEL || process.env.NODE_ENV === "production");
+
+function resolveDefaultDbUrl(): string {
+  const envUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL;
+
+  if (envUrl) {
+    if (isCloudOrProd && (envUrl.includes("127.0.0.1") || envUrl.includes("localhost"))) {
+      return SUPABASE_CLOUD_URL;
+    }
+    return envUrl;
+  }
+  if (isCloudOrProd) {
+    return SUPABASE_CLOUD_URL;
+  }
+  return "postgresql://bi_app:bi_app_pw@127.0.0.1:5434/bi_platform";
+}
+
 const schema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -27,11 +50,13 @@ const schema = z.object({
   DATABASE_URL: z
     .string()
     .url()
-    .default(
-      process.env.POSTGRES_URL ||
-      process.env.POSTGRES_PRISMA_URL ||
-      "postgresql://bi_app:bi_app_pw@127.0.0.1:5434/bi_platform"
-    )
+    .default(resolveDefaultDbUrl)
+    .transform((val) => {
+      if (isCloudOrProd && (val.includes("127.0.0.1") || val.includes("localhost"))) {
+        return SUPABASE_CLOUD_URL;
+      }
+      return val;
+    })
     .describe("App connection — non-superuser, RLS-enforced role"),
   MIGRATION_DATABASE_URL: z
     .string()

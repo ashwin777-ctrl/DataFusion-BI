@@ -36,12 +36,25 @@ function resolvePgSsl(config: PgConnectionConfig) {
   return isLocal ? false : { rejectUnauthorized: false };
 }
 
+function checkCloudLocalhost(host: string): string | null {
+  const isCloud = Boolean(process.env.VERCEL || (process.env.NODE_ENV === "production" && !process.env.ALLOW_LOCAL_POSTGRES));
+  if (isCloud && (host === "127.0.0.1" || host === "localhost" || host === "::1")) {
+    return "Cannot connect to 'localhost' or '127.0.0.1' from cloud deployments. Please provide a publicly accessible database host (e.g. Supabase, Neon, AWS RDS).";
+  }
+  return null;
+}
+
 /**
  * Test an external PostgreSQL database connection with strict timeout.
  */
 export async function testPostgresConnection(
   config: PgConnectionConfig,
 ): Promise<{ ok: boolean; version?: string; latencyMs?: number; error?: string }> {
+  const localErr = checkCloudLocalhost(config.host);
+  if (localErr) {
+    return { ok: false, error: localErr };
+  }
+
   const start = Date.now();
   const client = new Client({
     host: config.host,
@@ -72,6 +85,11 @@ export async function testPostgresConnection(
 export async function listPostgresTables(
   config: PgConnectionConfig,
 ): Promise<RemoteTableInfo[]> {
+  const localErr = checkCloudLocalhost(config.host);
+  if (localErr) {
+    throw new Error(localErr);
+  }
+
   const client = new Client({
     host: config.host,
     port: config.port || 5432,
@@ -162,6 +180,11 @@ export async function ingestPostgresTable(params: {
   profile: DatasetProfile;
 }> {
   const { orgId, sourceId, config, tableSchema, tableName, limit } = params;
+
+  const localErr = checkCloudLocalhost(config.host);
+  if (localErr) {
+    throw new Error(localErr);
+  }
 
   const client = new Client({
     host: config.host,

@@ -41,12 +41,12 @@ export default function SourcesPage() {
 
   // PostgreSQL Modal state
   const [showPgModal, setShowPgModal] = useState(false);
-  const [pgHost, setPgHost] = useState("127.0.0.1");
-  const [pgPort, setPgPort] = useState("5434");
-  const [pgDatabase, setPgDatabase] = useState("bi_platform");
-  const [pgUser, setPgUser] = useState("bi_app");
-  const [pgPassword, setPgPassword] = useState("bi_app_pw");
-  const [pgSsl] = useState(false);
+  const [pgHost, setPgHost] = useState("");
+  const [pgPort, setPgPort] = useState("5432");
+  const [pgDatabase, setPgDatabase] = useState("postgres");
+  const [pgUser, setPgUser] = useState("postgres");
+  const [pgPassword, setPgPassword] = useState("");
+  const [pgSsl, setPgSsl] = useState(true);
   const [testingPg, setTestingPg] = useState(false);
   const [pgTables, setPgTables] = useState<Array<{ tableSchema: string; tableName: string; estimatedRows: number }>>([]);
   const [selectedTable, setSelectedTable] = useState<string>("");
@@ -143,6 +143,21 @@ export default function SourcesPage() {
   }
 
   async function handleTestPg() {
+    if (!pgHost.trim()) {
+      setError("Please provide the database host address.");
+      return;
+    }
+
+    const isCloud =
+      typeof window !== "undefined" &&
+      !window.location.hostname.includes("localhost") &&
+      !window.location.hostname.includes("127.0.0.1");
+
+    if (isCloud && (pgHost === "127.0.0.1" || pgHost === "localhost" || pgHost === "::1")) {
+      setError("Cannot connect to 'localhost' or '127.0.0.1' from cloud deployments. Please enter a publicly accessible host (e.g. Supabase, Neon, AWS RDS, or an external IP).");
+      return;
+    }
+
     try {
       setTestingPg(true);
       setError(null);
@@ -294,9 +309,17 @@ export default function SourcesPage() {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-xs font-semibold px-2 py-1 rounded bg-destructive/20 hover:bg-destructive/30 transition-colors"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -455,8 +478,8 @@ export default function SourcesPage() {
                   type="text"
                   value={pgHost}
                   onChange={(e) => setPgHost(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-                  placeholder="127.0.0.1 or db.example.com"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+                  placeholder="e.g. aws-0.pooler.supabase.com"
                 />
               </div>
               <div>
@@ -465,8 +488,8 @@ export default function SourcesPage() {
                   type="text"
                   value={pgPort}
                   onChange={(e) => setPgPort(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-                  placeholder="5432 or 5434"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+                  placeholder="5432 or 6543"
                 />
               </div>
               <div>
@@ -475,7 +498,8 @@ export default function SourcesPage() {
                   type="text"
                   value={pgDatabase}
                   onChange={(e) => setPgDatabase(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+                  placeholder="postgres"
                 />
               </div>
               <div>
@@ -484,7 +508,8 @@ export default function SourcesPage() {
                   type="text"
                   value={pgUser}
                   onChange={(e) => setPgUser(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+                  placeholder="postgres"
                 />
               </div>
               <div className="col-span-2">
@@ -493,8 +518,21 @@ export default function SourcesPage() {
                   type="password"
                   value={pgPassword}
                   onChange={(e) => setPgPassword(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+                  placeholder="••••••••"
                 />
+              </div>
+              <div className="col-span-2 flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="pgSslToggle"
+                  checked={pgSsl}
+                  onChange={(e) => setPgSsl(e.target.checked)}
+                  className="rounded border-input text-cyan-500 focus:ring-cyan-500 h-4 w-4"
+                />
+                <label htmlFor="pgSslToggle" className="text-xs text-muted-foreground cursor-pointer select-none">
+                  Require SSL / TLS encryption (recommended for cloud databases)
+                </label>
               </div>
             </div>
 

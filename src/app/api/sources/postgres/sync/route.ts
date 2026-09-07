@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { ingestPostgresTable } from "@/lib/engine/ingest-postgres";
+import { persistStorageBlob } from "@/lib/engine/duckdb";
 import { randomUUID } from "node:crypto";
-import { statSync } from "node:fs";
+import { statSync, readFileSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,12 @@ export async function POST(req: NextRequest) {
     });
 
     const parquetBytes = statSync(ingestRes.primaryParquetPath).size;
+    try {
+      const pBuf = readFileSync(ingestRes.primaryParquetPath);
+      await persistStorageBlob(ingestRes.primaryParquetPath, pBuf);
+    } catch (e) {
+      console.error("Failed to persist synced postgres parquet blob:", e);
+    }
     const alias = `${tableSchema}_${tableName}`.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 
     await withOrg(orgId, async (db) => {
