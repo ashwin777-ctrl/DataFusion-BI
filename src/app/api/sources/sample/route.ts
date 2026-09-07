@@ -3,10 +3,10 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { generateSampleEnterpriseWorkbook } from "@/lib/fixtures/sample-data";
 import { ingestUploadedFile } from "@/lib/engine/ingest-file";
-import { getOrgStorageDir } from "@/lib/engine/duckdb";
+import { getOrgStorageDir, persistStorageBlob } from "@/lib/engine/duckdb";
 import { consolidateDataset } from "@/lib/engine/consolidate";
 import { randomUUID } from "node:crypto";
-import { writeFileSync, statSync } from "node:fs";
+import { writeFileSync, statSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,7 @@ export async function POST() {
     const fileId = randomUUID();
     const rawStoragePath = join(getOrgStorageDir(orgId), `${fileId}_${fileName}`);
     writeFileSync(rawStoragePath, workbookBuffer);
+    await persistStorageBlob(rawStoragePath, workbookBuffer);
 
     // Save sourceFile
     await withOrg(orgId, async (db) => {
@@ -54,6 +55,11 @@ export async function POST() {
       });
 
       const parquetBytes = statSync(ingestRes.primaryParquetPath).size;
+      try {
+        await persistStorageBlob(ingestRes.primaryParquetPath, readFileSync(ingestRes.primaryParquetPath));
+      } catch (e) {
+        console.error("Failed to persist sample sheet parquet:", e);
+      }
       const alias = sheet.toLowerCase();
 
       await withOrg(orgId, async (db) => {
@@ -159,6 +165,11 @@ export async function POST() {
     });
 
     const dsStorageBytes = statSync(consolidationRes.parquetPath).size;
+    try {
+      await persistStorageBlob(consolidationRes.parquetPath, readFileSync(consolidationRes.parquetPath));
+    } catch (e) {
+      console.error("Failed to persist sample consolidated dataset parquet:", e);
+    }
 
     await withOrg(orgId, async (db) => {
       await db.insert(schema.datasets).values({
@@ -182,13 +193,13 @@ export async function POST() {
           orgId,
           datasetId,
           leftSourceId: ordersSrc.id,
-          leftColumns: ["product_id"],
+          leftColumns: [\"product_id\"],
           rightSourceId: productsSrc.id,
-          rightColumns: ["product_id"],
-          joinType: "left",
-          cardinality: "N:1",
+          rightColumns: [\"product_id\"],
+          joinType: \"left\",
+          cardinality: \"N:1\",
           confidence: 1.0,
-          origin: "inferred",
+          origin: \"inferred\",
           isEnabled: true,
           userConfirmedAt: new Date(),
         },
@@ -197,13 +208,13 @@ export async function POST() {
           orgId,
           datasetId,
           leftSourceId: ordersSrc.id,
-          leftColumns: ["customer_id"],
+          leftColumns: [\"customer_id\"],
           rightSourceId: customersSrc.id,
-          rightColumns: ["customer_id"],
-          joinType: "left",
-          cardinality: "N:1",
+          rightColumns: [\"customer_id\"],
+          joinType: \"left\",
+          cardinality: \"N:1\",
           confidence: 1.0,
-          origin: "inferred",
+          origin: \"inferred\",
           isEnabled: true,
           userConfirmedAt: new Date(),
         },
@@ -212,16 +223,16 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: "Sample enterprise dataset and consolidated model created successfully",
+      message: \"Sample enterprise dataset and consolidated model created successfully\",
       datasetId,
       sourcesCount: createdSources.length,
       rowCount: consolidationRes.profile.rowCount,
       profile: consolidationRes.profile,
     });
   } catch (err: any) {
-    console.error("Sample dataset load error:", err);
+    console.error(\"Sample dataset load error:\", err);
     return NextResponse.json(
-      { error: err.message || "Failed to load sample dataset" },
+      { error: err.message || \"Failed to load sample dataset\" },
       { status: 500 },
     );
   }

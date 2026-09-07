@@ -3,7 +3,7 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { inferDatasetRelationships } from "@/lib/engine/relationships";
-import { withDuckDB, getSourceParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, getSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
         { status: 404 },
       );
     }
+
+    // Ensure all source Parquet files are present on the local filesystem (restores from PostgreSQL if serverless cold-started)
+    await Promise.all(
+      sources.map((s) =>
+        ensureStorageBlob(s.parquetPath || getSourceParquetPath(orgId, s.id)),
+      ),
+    );
 
     const allInferred = await withDuckDB(async (conn) => {
       const results = [];

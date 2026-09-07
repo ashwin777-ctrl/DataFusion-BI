@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, getDatasetParquetPath, ensureStorageBlob, persistStorageBlob } from "@/lib/engine/duckdb";
 import { buildTransformSql, type TransformStep } from "@/lib/engine/transform";
 import { profileParquetFile } from "@/lib/engine/profile";
-import { statSync } from "node:fs";
+import { statSync, readFileSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +38,7 @@ export async function POST(
     }
 
     const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
+    await ensureStorageBlob(parquetPath);
     const norm = parquetPath.replace(/\\/g, "/");
 
     const profile = await withDuckDB(async (conn) => {
@@ -53,6 +54,11 @@ export async function POST(
     });
 
     const newBytes = statSync(parquetPath).size;
+    try {
+      await persistStorageBlob(parquetPath, readFileSync(parquetPath));
+    } catch (e) {
+      console.error("Failed to persist transformed parquet blob:", e);
+    }
 
     await withOrg(orgId, async (db) => {
       await db

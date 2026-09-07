@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { ingestUploadedFile } from "@/lib/engine/ingest-file";
-import { getOrgStorageDir } from "@/lib/engine/duckdb";
+import { getOrgStorageDir, persistStorageBlob } from "@/lib/engine/duckdb";
 import { createHash, randomUUID } from "node:crypto";
-import { writeFileSync, statSync } from "node:fs";
+import { writeFileSync, statSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       `${fileId}_${originalName}`,
     );
     writeFileSync(rawStoragePath, buffer);
+    await persistStorageBlob(rawStoragePath, buffer);
 
     const sourceId = randomUUID();
     const ingestResult = await ingestUploadedFile({
@@ -53,6 +54,12 @@ export async function POST(req: NextRequest) {
     });
 
     const parquetBytes = statSync(ingestResult.primaryParquetPath).size;
+    try {
+      const parquetBuf = readFileSync(ingestResult.primaryParquetPath);
+      await persistStorageBlob(ingestResult.primaryParquetPath, parquetBuf);
+    } catch (e) {
+      console.error("Failed to persist source parquet blob:", e);
+    }
 
     // Save metadata in PostgreSQL under RLS
     await withOrg(orgId, async (db) => {

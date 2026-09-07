@@ -3,9 +3,9 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { desc, eq } from "drizzle-orm";
 import { consolidateDataset, type JoinConfig } from "@/lib/engine/consolidate";
-import { getSourceParquetPath } from "@/lib/engine/duckdb";
+import { getSourceParquetPath, ensureStorageBlob, persistStorageBlob } from "@/lib/engine/duckdb";
 import { randomUUID } from "node:crypto";
-import { statSync } from "node:fs";
+import { statSync, readFileSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +65,13 @@ export async function POST(req: NextRequest) {
     const datasetId = randomUUID();
     const primarySource = selectedSources[0];
 
+    // Ensure all selected source Parquet files are present locally
+    await Promise.all(
+      selectedSources.map((s) =>
+        ensureStorageBlob(s.parquetPath || getSourceParquetPath(orgId, s.id)),
+      ),
+    );
+
     const consolidationRes = await consolidateDataset({
       orgId,
       datasetId,
@@ -80,6 +87,14 @@ export async function POST(req: NextRequest) {
     });
 
     const dsStorageBytes = statSync(consolidationRes.parquetPath).size;
+
+    // Persist consolidated dataset Parquet to PostgreSQL storage_blobs
+    try {
+      const parquetBuf = readFileSync(consolidationRes.parquetPath);
+      await persistStorageBlob(consolidationRes.parquetPath, parquetBuf);
+    } catch (e) {
+      console.error("Failed to persist consolidated parquet blob:", e);
+    }
 
     await withOrg(orgId, async (db) => {
       await db.insert(schema.datasets).values({

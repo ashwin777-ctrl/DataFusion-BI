@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, queryDuckDB, getSourceParquetPath } from "@/lib/engine/duckdb";
+import { withDuckDB, queryDuckDB, getSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { unlinkSync, existsSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +38,7 @@ export async function GET(
     }
 
     const parquetPath = sourceData.source.parquetPath || getSourceParquetPath(orgId, sourceId);
+    await ensureStorageBlob(parquetPath);
     let previewRows: any[] = [];
 
     if (existsSync(parquetPath)) {
