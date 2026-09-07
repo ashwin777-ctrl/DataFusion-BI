@@ -27,17 +27,23 @@ declare global {
 const isRemoteOrSsl =
   Boolean(
     env.DATABASE_URL.includes("supabase") ||
-    env.DATABASE_URL.includes("sslmode=require") ||
+    env.DATABASE_URL.includes("sslmode") ||
     env.DATABASE_URL.includes("neon.tech") ||
     (process.env.NODE_ENV === "production" &&
       !env.DATABASE_URL.includes("localhost") &&
       !env.DATABASE_URL.includes("127.0.0.1"))
   );
 
+// node-pg's connection string parser overrides `ssl: { rejectUnauthorized: false }`
+// if `sslmode=require` is present in the query string. Strip it so our custom SSL config takes precedence.
+const cleanConnectionString = isRemoteOrSsl
+  ? env.DATABASE_URL.replace(/[?&]sslmode=[^&]+/g, "").replace(/\?$/, "")
+  : env.DATABASE_URL;
+
 const pool =
   global.__biPool ??
   new Pool({
-    connectionString: env.DATABASE_URL,
+    connectionString: cleanConnectionString,
     ssl: isRemoteOrSsl ? { rejectUnauthorized: false } : undefined,
     max: 10,
     idleTimeoutMillis: 30_000,
