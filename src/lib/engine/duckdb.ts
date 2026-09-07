@@ -11,7 +11,17 @@ import { resolve, join } from "node:path";
 let instancePromise: Promise<DuckDBInstance> | null = null;
 
 export function getStorageRoot(): string {
-  const root = process.env.STORAGE_DIR ?? "./storage";
+  let root = process.env.STORAGE_DIR;
+  const isServerless = Boolean(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    (typeof process.cwd === "function" && process.cwd().startsWith("/var/task"))
+  );
+
+  if (!root || (isServerless && (root === "./storage" || root.startsWith("./") || root.startsWith("/var/task")))) {
+    root = isServerless ? "/tmp/storage" : "./storage";
+  }
+
   const abs = resolve(root);
   if (!existsSync(abs)) {
     mkdirSync(abs, { recursive: true });
