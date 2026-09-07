@@ -24,10 +24,21 @@ declare global {
   var __biPool: Pool | undefined;
 }
 
+const isRemoteOrSsl =
+  Boolean(
+    env.DATABASE_URL.includes("supabase") ||
+    env.DATABASE_URL.includes("sslmode=require") ||
+    env.DATABASE_URL.includes("neon.tech") ||
+    (process.env.NODE_ENV === "production" &&
+      !env.DATABASE_URL.includes("localhost") &&
+      !env.DATABASE_URL.includes("127.0.0.1"))
+  );
+
 const pool =
   global.__biPool ??
   new Pool({
     connectionString: env.DATABASE_URL,
+    ssl: isRemoteOrSsl ? { rejectUnauthorized: false } : undefined,
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,

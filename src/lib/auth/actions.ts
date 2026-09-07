@@ -58,49 +58,88 @@ export async function signupAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const parsed = signupSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-    name: formData.get("name"),
-    orgName: formData.get("orgName"),
-  });
-  if (!parsed.success) {
-    return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
-  }
+  try {
+    const parsed = signupSchema.safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
+      name: formData.get("name"),
+      orgName: formData.get("orgName"),
+    });
+    if (!parsed.success) {
+      return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
+    }
 
-  const result = await createAccount(parsed.data);
-  if (!result.ok) {
-    return { fieldErrors: { email: "An account with this email already exists" } };
-  }
+    const result = await createAccount(parsed.data);
+    if (!result.ok) {
+      return { fieldErrors: { email: "An account with this email already exists" } };
+    }
 
-  // A brand-new account has exactly one org — make it active immediately.
-  await issueSession(result.userId, result.orgId);
-  redirect("/app");
+    // A brand-new account has exactly one org — make it active immediately.
+    await issueSession(result.userId, result.orgId);
+    redirect("/app");
+  } catch (err: any) {
+    if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT") {
+      throw err;
+    }
+    console.error("signupAction error:", err);
+    return { formError: "Registration service unavailable. Please check your database connection." };
+  }
 }
 
 export async function loginAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
-  if (!parsed.success) {
-    return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
-  }
+  try {
+    const parsed = loginSchema.safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
+    });
+    if (!parsed.success) {
+      return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
+    }
 
-  const auth = await authenticate(parsed.data.email, parsed.data.password);
-  if (!auth.ok) {
-    // One generic message — never reveal whether the email exists.
-    return { formError: "Incorrect email or password" };
-  }
+    const auth = await authenticate(parsed.data.email, parsed.data.password);
+    if (!auth.ok) {
+      // One generic message — never reveal whether the email exists.
+      return { formError: "Incorrect email or password" };
+    }
 
-  // Default the active org to the user's first (alphabetical) org, if any.
-  const orgs = await listUserOrgs(auth.userId);
-  await issueSession(auth.userId, orgs[0]?.id ?? null);
-  await markLoggedIn(auth.userId);
-  redirect("/app");
+    // Default the active org to the user's first (alphabetical) org, if any.
+    const orgs = await listUserOrgs(auth.userId);
+    await issueSession(auth.userId, orgs[0]?.id ?? null);
+    await markLoggedIn(auth.userId);
+    redirect("/app");
+  } catch (err: any) {
+    if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT") {
+      throw err;
+    }
+    console.error("loginAction error:", err);
+    return { formError: "Authentication service unavailable. Please check your database connection." };
+  }
+}
+
+/** One-click entry for the local/demo account shown in the public experience. */
+export async function demoLoginAction(): Promise<void> {
+  try {
+    let auth = await authenticate("ashwin@datafusion.io", "Admin@123456");
+    if (!auth.ok) {
+      auth = await authenticate("ashwin@datafusion.io", "Password123!");
+    }
+
+    if (auth.ok) {
+      const orgs = await listUserOrgs(auth.userId);
+      await issueSession(auth.userId, orgs[0]?.id ?? null);
+      await markLoggedIn(auth.userId);
+      redirect("/app");
+    }
+  } catch (err: any) {
+    if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT") {
+      throw err;
+    }
+    console.error("demoLoginAction error:", err);
+  }
+  redirect("/login");
 }
 
 export async function logoutAction(): Promise<void> {
