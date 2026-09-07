@@ -215,7 +215,7 @@ export default function InsightsPage() {
 
                     {item.recommendation && (
                       <div className="rounded-lg bg-[#0d1627]/90 p-3 text-xs border border-cyan-500/20">
-                        <strong className="text-cyan-300 block mb-0.5 flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider font-mono">
+                        <strong className="text-cyan-300 mb-0.5 flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider font-mono">
                           <ArrowRight className="h-3 w-3 text-cyan-400" /> Recommended Action:
                         </strong>
                         <span className="text-slate-300 leading-relaxed">{item.recommendation}</span>
