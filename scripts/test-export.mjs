@@ -3,7 +3,7 @@ import { chromium } from '@playwright/test';
 async function test() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  await page.goto('http://localhost:3001/login');
+  await page.goto('https://data-fusion-bi.vercel.app/login');
   await page.fill('input[type="email"]', 'ashwin@datafusion.io');
   await page.fill('input[type="password"]', 'Admin@123456');
   await Promise.all([
