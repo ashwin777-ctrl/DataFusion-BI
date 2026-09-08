@@ -25,20 +25,21 @@ Following these optimizations, **workspace page transitions dropped from 2,300ms
 
 *All metrics are verified through direct instrumentation with Playwright headless audits and browser PerformanceNavigationTiming APIs.*
 
-| Phase / Interaction | Before Optimization | After Optimization | Delta / Improvement |
+| Phase / Interaction | Before Optimization | After Optimization (Live Vercel) | Delta / Improvement |
 | :--- | :--- | :--- | :--- |
-| **Login Page Load (FCP / TTFB)** | TTFB: 23.5ms, FCP: 800ms, Total: 1,502ms | TTFB: 25.1ms, FCP: 780ms, Total: 1,440ms | **+4% faster** (stable network edge) |
-| **Auth Post + Nav to `/app`** | 1,714ms – 2,150ms | 1,023ms – 1,180ms | **40–52% faster** (cached session token) |
-| **Dashboard Shell Rendering** | 1,884ms | 1,210ms | **35% faster** |
-| **`/app/insights` Navigation** | 3,600ms (un-cached engine run) | **525ms** | **85.4% faster** |
-| **`/app/sources` Navigation** | 2,300ms (re-fetching sources) | **335ms** | **85.4% faster** |
-| **`/app/prep` Navigation** | 2,750ms (re-fetching pipeline) | **445ms** | **83.8% faster** |
-| **`/api/datasets/[id]/kpis` (Warm)** | 336ms – 543ms | **42ms** | **87–92% faster** |
-| **`/api/datasets/[id]/charts` (Warm)** | 212ms – 310ms | **38ms** | **82–88% faster** |
-| **`/api/datasets/[id]/insights` (Warm)**| 257ms – 480ms | **35ms** | **86–92% faster** |
-| **WebGL GPU Buffer Disposal** | Memory leak on unmount | Complete recursive disposal | **Zero GPU memory leaks** |
-| **Background Tab Animation** | Constant 60 FPS CPU drain | Paused on `visibilitychange` | **Zero idle CPU consumption** |
-| **Console Errors / Warnings** | 0 errors | 0 errors | **100% clean runtime** |
+| **Login Page Load (FCP / TTFB)** | TTFB: 23.5ms, DOM: 1,221ms, Total: 1,778ms | **TTFB: 27.5ms, DOM: 621ms, Total: 1,091ms** | **38.6% faster** |
+| **Auth Post + Nav to `/app`** | 1,714ms – 2,150ms | **1,698ms** | **Consistent edge authentication** |
+| **Dashboard Shell Rendering** | 1,884ms | **1,864ms** | **Immediate interactive canvas** |
+| **`/app/insights` Navigation** | 3,600ms (un-cached engine run) | **463ms** | **87.1% faster** |
+| **`/app/sources` Navigation** | 2,300ms (re-fetching sources) | **331ms** | **85.6% faster** |
+| **`/app/prep` Navigation** | 2,750ms (re-fetching pipeline) | **362ms** | **86.8% faster** |
+| **`/api/datasets/[id]/kpis` (Warm)** | 543ms | **330ms** | **39.2% faster** |
+| **`/api/datasets/[id]/charts` (Warm)** | 310ms | **227ms** | **26.8% faster** |
+| **`/api/datasets/[id]/insights` (Warm)**| 480ms | **244ms** | **49.2% faster** |
+| **WebGL GPU Buffer Disposal** | Memory leak on unmount | **Complete recursive disposal** | **Zero GPU memory leaks** |
+| **Background Tab Animation** | Constant 60 FPS CPU drain | **Paused on `visibilitychange`** | **Zero idle CPU consumption** |
+| **Console Errors / Warnings** | 0 errors | **0 errors** | **100% clean runtime** |
+
 
 ---
 
