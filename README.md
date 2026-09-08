@@ -47,7 +47,7 @@
   <tr>
     <td width="50%">
       <h3>📂 Multi-Source Ingestion & Live Connectors</h3>
-      <p>Seamlessly ingest multi-sheet <b>Excel (.xlsx, .xls)</b>, <b>CSV</b>, and live <b>PostgreSQL 16</b> databases with automated schema validation, type inference, and dirty-data sanitization.</p>
+      <p>Seamlessly ingest multi-sheet <b>Excel (.xlsx)</b>, <b>CSV</b>, and live <b>PostgreSQL 16</b> databases with automated schema validation, type inference, and dirty-data sanitization.</p>
     </td>
     <td width="50%">
       <h3>🧠 Automated Schema & Join Inference</h3>
@@ -170,12 +170,12 @@ Use the pre-seeded enterprise administrator credentials to log in:
 
 | Parameter | Value |
 |---|---|
-| **Login Portal** | [http://localhost:3001/login](http://localhost:3001/login) |
+| **Application** | [http://localhost:3001](http://localhost:3001) |
 | **Email** | `ashwin@datafusion.io` |
-| **Password** | `Password123!` |
+| **Password** | `Admin@123456` |
 | **Role** | Organization Owner (`datafusion_primary`) |
 
-> You can also click the **"Fill Demo Credentials"** button directly on the login page or on the embedded sign-in module on the homepage for instant one-click access.
+> Open the homepage first at [http://localhost:3001](http://localhost:3001), then use **"Enter Demo Workspace"** to authenticate in one click.
 
 ---
 
