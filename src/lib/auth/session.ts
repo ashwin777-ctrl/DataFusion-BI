@@ -146,10 +146,10 @@ export async function resolveSessionByToken(
     activeOrg,
   };
 
-  // Cache for 15 seconds (or until cookie expires)
+  // Cache for 60 seconds (or until cookie expires)
   SESSION_CACHE.set(tokenHash, {
     session,
-    cachedUntil: Math.min(now + 15_000, row.expiresAt.getTime()),
+    cachedUntil: Math.min(now + 60_000, row.expiresAt.getTime()),
   });
 
   return session;

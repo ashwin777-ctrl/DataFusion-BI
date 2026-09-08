@@ -89,7 +89,12 @@ export default function DashboardPage() {
   const [selectedSecondaryMeasure, setSelectedSecondaryMeasure] = useState<string>("");
   const [timeBucket, setTimeBucket] = useState<"day" | "week" | "month" | "quarter" | "year">("month");
   const [chartType, setChartType] = useState<"bar" | "line" | "area" | "donut" | "scatter" | "radar">("bar");
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] = useState<any>(() => {
+    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
+    if (!initialId) return null;
+    const key = Object.keys(clientCache.charts).find((k) => k.startsWith(`${initialId}:`));
+    return key ? clientCache.charts[key] : null;
+  });
   const [loadingChart, setLoadingChart] = useState(false);
 
   // Raw data search & pagination
@@ -99,6 +104,7 @@ export default function DashboardPage() {
 
   // 1. Initial Load: Datasets
   useEffect(() => {
+    let isSubscribed = true;
     async function loadDatasets() {
       try {
         if (!clientCache.datasets) {
@@ -108,37 +114,30 @@ export default function DashboardPage() {
         const data = await res.json();
         if (res.ok && data.datasets?.length > 0) {
           clientCache.datasets = data.datasets;
-          setDatasets(data.datasets);
-          const firstId = data.datasets[0].id;
-          clientCache.activeDatasetId = clientCache.activeDatasetId || firstId;
-          setActiveDatasetId((prev) => prev || firstId);
-        } else {
-          // If no datasets exist, check sources and load them or offer 1-click sample
+          if (isSubscribed) {
+            setDatasets(data.datasets);
+            const firstId = data.datasets[0].id;
+            clientCache.activeDatasetId = clientCache.activeDatasetId || firstId;
+            setActiveDatasetId((prev) => prev || firstId);
+          }
+        } else if (res.ok) {
+          // Pre-fetch sources so Sources tab is primed without auto-creating datasets unexpectedly
           const srcRes = await fetch("/api/sources");
           const srcData = await srcRes.json();
-          if (srcRes.ok && srcData.sources?.length > 0) {
-            // Auto-create dataset from first source
-            const s = srcData.sources[0];
-            const autoRes = await fetch("/api/datasets", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name: `${s.alias} Model`, sourceIds: [s.id] }),
-            });
-            const autoData = await autoRes.json();
-            if (autoRes.ok) {
-              setDatasets([autoData]);
-              clientCache.activeDatasetId = autoData.datasetId;
-              setActiveDatasetId(autoData.datasetId);
-            }
+          if (srcRes.ok && srcData.sources) {
+            clientCache.sources = srcData.sources;
           }
         }
       } catch {
-        setError("Error loading datasets");
+        if (isSubscribed) setError("Error loading datasets");
       } finally {
-        setLoading(false);
+        if (isSubscribed) setLoading(false);
       }
     }
     loadDatasets();
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   // 2. When active dataset changes, fetch dataset details & KPIs in parallel
@@ -228,6 +227,12 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!activeDatasetId || !selectedMeasure) return;
 
+    const chartKey = `${activeDatasetId}:${chartType}:${selectedDimension}:${selectedMeasure}:${selectedSecondaryMeasure}:${timeBucket}`;
+    if (clientCache.charts[chartKey]) {
+      setChartData(clientCache.charts[chartKey]);
+      return;
+    }
+
     async function fetchChart() {
       try {
         setLoadingChart(true);
@@ -246,6 +251,7 @@ export default function DashboardPage() {
 
         const data = await res.json();
         if (res.ok) {
+          clientCache.charts[chartKey] = data;
           setChartData(data);
         }
       } catch {

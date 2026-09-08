@@ -1,5 +1,25 @@
 import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
+import { statSync } from "node:fs";
+
+const CHART_CACHE = new Map<string, { result: ChartResult; mtimeMs: number }>();
+
+function buildChartCacheKey(params: ChartAggregationParams): string {
+  const normPath = params.parquetPath.replace(/\\/g, "/");
+  return `${normPath}::${params.chartType}::${params.dimension || ""}::${params.measure || ""}::${params.secondaryMeasure || ""}::${params.aggregation || "sum"}::${params.timeBucket || "month"}::${params.filterSql || ""}::${params.limit || 50}::${params.sortOrder || "desc"}`;
+}
+
+export function getCachedChartData(params: ChartAggregationParams): ChartResult | null {
+  try {
+    const fileMtimeMs = statSync(params.parquetPath).mtimeMs;
+    const key = buildChartCacheKey(params);
+    const cached = CHART_CACHE.get(key);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.result;
+    }
+  } catch {}
+  return null;
+}
 
 export interface ChartAggregationParams {
   parquetPath: string;
@@ -44,6 +64,16 @@ export async function getChartData(
   conn: DuckDBConnection,
   params: ChartAggregationParams,
 ): Promise<ChartResult> {
+  const cached = getCachedChartData(params);
+  if (cached) {
+    return cached;
+  }
+
+  let fileMtimeMs = 0;
+  try {
+    fileMtimeMs = statSync(params.parquetPath).mtimeMs;
+  } catch {}
+
   const normPath = params.parquetPath.replace(/\\/g, "/");
   const agg = params.aggregation ?? "sum";
   const limit = Math.min(params.limit ?? 50, 200);
@@ -83,26 +113,33 @@ export async function getChartData(
         COUNT(*) as count
       FROM read_parquet('${normPath}')
       ${where ? `${where} AND ${dateCol} IS NOT NULL` : `WHERE ${dateCol} IS NOT NULL`}
-      GROUP BY label
-      ORDER BY label ASC
-      LIMIT ${limit};
+      GROUP BY 1
+      ORDER BY 1 ASC
+      LIMIT ${limit}
     `;
-  }
-  // 2. Scatter / Correlation
-  else if (params.chartType === "scatter" && meas && secMeas) {
+  } else if (params.chartType === "scatter") {
+    // 2. Scatter plot (X = measure, Y = secondaryMeasure)
+    const xExpr = measExpr;
+    const yExpr = secMeas ? `AVG(TRY_CAST(${secMeas} AS DOUBLE))` : "1";
+    const groupCol = dim ?? "'Point'";
+
     sql = `
       SELECT 
-        COALESCE(CAST(${dim ?? "'Item'"} AS VARCHAR), 'Item') as label,
-        TRY_CAST(${meas} AS DOUBLE) as value,
-        TRY_CAST(${secMeas} AS DOUBLE) as secondary_value
+        ${groupCol} as label,
+        ${xExpr} as value,
+        ${yExpr} as secondary_value,
+        COUNT(*) as count
       FROM read_parquet('${normPath}')
-      ${where ? `${where} AND ${meas} IS NOT NULL AND ${secMeas} IS NOT NULL` : `WHERE ${meas} IS NOT NULL AND ${secMeas} IS NOT NULL`}
-      LIMIT 150;
+      ${where}
+      GROUP BY 1
+      ORDER BY value DESC
+      LIMIT ${limit}
     `;
-  }
-  // 3. Categorical (Bar / Donut / Radar / Table)
-  else {
-    const groupCol = dim ?? "'All'";
+  } else {
+    // 3. Bar / Donut / Radar / Generic categorical aggregation
+    const groupCol = dim ?? "'Total'";
+    const sort = params.sortOrder === "asc" ? "ASC" : "DESC";
+
     sql = `
       SELECT 
         COALESCE(CAST(${groupCol} AS VARCHAR), 'Unknown') as label,
@@ -111,30 +148,22 @@ export async function getChartData(
         COUNT(*) as count
       FROM read_parquet('${normPath}')
       ${where}
-      GROUP BY label
-      ORDER BY value ${params.sortOrder ?? "DESC"}
-      LIMIT ${limit};
+      GROUP BY 1
+      ORDER BY value ${sort}
+      LIMIT ${limit}
     `;
   }
 
   const rawRows = await queryDuckDB<{
-    label: string;
+    label: any;
     value: any;
     secondary_value?: any;
     count?: any;
   }>(conn, sql);
 
-  const values: number[] = [];
-  let sumVal = 0;
-
-  for (const r of rawRows) {
-    const v = Number(r.value ?? 0);
-    const num = isNaN(v) ? 0 : Number(v.toFixed(2));
-    values.push(num);
-    sumVal += num;
-  }
-
-  // Statistical anomaly detection over the series
+  // Compute summary stats and anomaly bounds (z-score on values)
+  const values = rawRows.map((r) => Number(r.value ?? 0)).filter((v) => !isNaN(v));
+  const sumVal = values.reduce((acc, v) => acc + v, 0);
   const mean = values.length > 0 ? sumVal / values.length : 0;
   const variance =
     values.length > 1
@@ -161,7 +190,7 @@ export async function getChartData(
     };
   });
 
-  return {
+  const result: ChartResult = {
     chartType: params.chartType,
     dimension: params.dimension ?? "All",
     measure: params.measure ?? "Count",
@@ -172,4 +201,10 @@ export async function getChartData(
     maxValue: values.length > 0 ? Math.max(...values) : 0,
     minValue: values.length > 0 ? Math.min(...values) : 0,
   };
+
+  if (fileMtimeMs > 0) {
+    CHART_CACHE.set(buildChartCacheKey(params), { result, mtimeMs: fileMtimeMs });
+  }
+
+  return result;
 }

@@ -3,8 +3,7 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
-import { profileParquetFile } from "@/lib/engine/profile";
-import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
+import { computeDatasetKpis, getCachedKpis } from "@/lib/engine/kpi-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +34,21 @@ export async function GET(
     const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
     await ensureStorageBlob(parquetPath, dataset.duckdbPath);
 
+    // 1. Fast Path: return warm memory-cached KPIs if Parquet file has not changed
+    const cachedKpis = getCachedKpis(parquetPath, { filterSql, dateColumn });
+    if (cachedKpis) {
+      return NextResponse.json(
+        { kpis: cachedKpis },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+          },
+        },
+      );
+    }
+
     const kpis = await withDuckDB(async (conn) => {
-      const profile = await profileParquetFile(conn, parquetPath);
-      return await computeDatasetKpis(conn, parquetPath, profile.columns, {
+      return await computeDatasetKpis(conn, parquetPath, undefined, {
         filterSql,
         dateColumn,
       });
@@ -87,15 +98,34 @@ export async function POST(
     const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
     await ensureStorageBlob(parquetPath, dataset.duckdbPath);
 
+    // 1. Fast Path: return warm memory-cached KPIs if Parquet file has not changed
+    const cachedKpis = getCachedKpis(parquetPath, { filterSql, dateColumn });
+    if (cachedKpis) {
+      return NextResponse.json(
+        { kpis: cachedKpis },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+          },
+        },
+      );
+    }
+
     const kpis = await withDuckDB(async (conn) => {
-      const profile = await profileParquetFile(conn, parquetPath);
-      return await computeDatasetKpis(conn, parquetPath, profile.columns, {
+      return await computeDatasetKpis(conn, parquetPath, undefined, {
         filterSql,
         dateColumn,
       });
     });
 
-    return NextResponse.json({ kpis });
+    return NextResponse.json(
+      { kpis },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+        },
+      },
+    );
   } catch (err: any) {
     console.error("KPI calculation error:", err);
     return NextResponse.json(

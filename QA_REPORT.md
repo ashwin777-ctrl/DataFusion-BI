@@ -163,6 +163,18 @@ Result: Zero horizontal page overflow detected (`document.documentElement.scroll
 
 ---
 
+## Performance & WebGL Resource Audits
+
+- **Production Target:** `https://data-fusion-bi.vercel.app`
+- **Profiling Tool:** `scripts/profile-production.mjs` using Playwright & PerformanceNavigationTiming
+- **Three.js Optimization:** Complete geometry and material disposal on component unmount, `visibilitychange` background tab throttling, and prefers-reduced-motion compliance.
+- **DuckDB Acceleration:** In-memory caching for analytical KPIs, chart groupings, and statistical insights. Double-profiling before cache lookup eliminated.
+- **Client Route Transitions:** Navigations between `/app`, `/app/sources`, `/app/prep`, and `/app/insights` dropped to 335ms–525ms via client-side SWR caching.
+- **Detailed Audit Metrics:** See [PERFORMANCE_REPORT.md](file:///c:/Users/ashwi/Downloads/bi-platform/PERFORMANCE_REPORT.md).
+
+---
+
 ## Conclusion & System Status
 
-DataFusion BI has achieved **100% test pass rate** on both development and production bundles. The entire application pipeline — from landing page entry, authentication, file ingestion, DuckDB analytical processing, 3D visualization, to multi-format report exports — is validated, secure, and production-ready.
+DataFusion BI has achieved **100% test pass rate** on both development and production bundles. The entire application pipeline — from landing page entry, authentication, file ingestion, DuckDB analytical processing, 3D visualization, to multi-format report exports — is validated, secure, highly performant, and production-ready.
+

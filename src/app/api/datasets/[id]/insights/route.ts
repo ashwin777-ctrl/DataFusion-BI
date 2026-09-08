@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
-import { generateDatasetInsights } from "@/lib/engine/insights";
+import { generateDatasetInsights, getCachedInsights } from "@/lib/engine/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,16 @@ export async function GET(
 
     const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
     await ensureStorageBlob(parquetPath, dataset.duckdbPath);
+
+    // 1. Fast Path: return warm memory-cached Insights report if Parquet has not changed
+    const cachedReport = getCachedInsights(parquetPath);
+    if (cachedReport) {
+      return NextResponse.json(cachedReport, {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+        },
+      });
+    }
 
     const report = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);

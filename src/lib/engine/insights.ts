@@ -6,6 +6,18 @@ import { statSync } from "node:fs";
 
 const INSIGHTS_CACHE = new Map<string, { report: InsightsReport; mtimeMs: number }>();
 
+export function getCachedInsights(parquetPath: string): InsightsReport | null {
+  const normPath = parquetPath.replace(/\\/g, "/");
+  try {
+    const fileMtimeMs = statSync(parquetPath).mtimeMs;
+    const cached = INSIGHTS_CACHE.get(normPath);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.report;
+    }
+  } catch {}
+  return null;
+}
+
 export interface BusinessInsight {
   id: string;
   category: "driver" | "trend" | "anomaly" | "opportunity" | "risk";

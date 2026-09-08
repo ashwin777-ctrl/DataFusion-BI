@@ -16,7 +16,14 @@ export async function GET() {
         .orderBy(desc(schema.sources.createdAt));
     });
 
-    return NextResponse.json({ sources: sourcesList });
+    return NextResponse.json(
+      { sources: sourcesList },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=5, stale-while-revalidate=30",
+        },
+      },
+    );
   } catch (err: any) {
     if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT" || err?.status === 401) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

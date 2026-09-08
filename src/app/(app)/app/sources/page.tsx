@@ -18,6 +18,7 @@ import {
   Layers,
   FileCheck,
 } from "lucide-react";
+import { clientCache } from "@/lib/cache/client-cache";
 
 interface SourceItem {
   id: string;
@@ -32,8 +33,8 @@ interface SourceItem {
 }
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState<SourceItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sources, setSources] = useState<SourceItem[]>(() => clientCache.sources || []);
+  const [loading, setLoading] = useState(!clientCache.sources);
   const [uploading, setUploading] = useState(false);
   const [loadingSample, setLoadingSample] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +57,15 @@ export default function SourcesPage() {
 
   async function loadSources() {
     try {
-      setLoading(true);
+      if (!clientCache.sources) {
+        setLoading(true);
+      }
       const res = await fetch("/api/sources");
       const data = await res.json();
       if (res.ok) {
-        setSources(data.sources || []);
+        const list = data.sources || [];
+        clientCache.sources = list;
+        setSources(list);
       } else {
         setError(data.error || "Failed to load sources");
       }
@@ -142,7 +147,11 @@ export default function SourcesPage() {
     try {
       const res = await fetch(`/api/sources/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setSources((prev) => prev.filter((s) => s.id !== id));
+        setSources((prev) => {
+          const next = prev.filter((s) => s.id !== id);
+          clientCache.sources = next;
+          return next;
+        });
       }
     } catch {
       setError("Failed to delete source");

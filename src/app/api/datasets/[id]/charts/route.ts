@@ -3,7 +3,7 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
-import { getChartData, type ChartAggregationParams } from "@/lib/engine/analytics";
+import { getChartData, getCachedChartData, type ChartAggregationParams } from "@/lib/engine/analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -35,22 +35,38 @@ export async function POST(
     const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
     await ensureStorageBlob(parquetPath, dataset.duckdbPath);
 
-    const chartResult = await withDuckDB(async (conn) => {
-      return await getChartData(conn, {
-        parquetPath,
-        chartType: chartType || "bar",
-        dimension,
-        measure,
-        secondaryMeasure,
-        aggregation: aggregation || "sum",
-        timeBucket: timeBucket || "month",
-        filterSql,
-        limit,
-        sortOrder,
+    const chartParams: ChartAggregationParams = {
+      parquetPath,
+      chartType: chartType || "bar",
+      dimension,
+      measure,
+      secondaryMeasure,
+      aggregation: aggregation || "sum",
+      timeBucket: timeBucket || "month",
+      filterSql,
+      limit,
+      sortOrder,
+    };
+
+    // 1. Fast Path: return warm memory-cached chart aggregation if Parquet has not changed
+    const cachedChart = getCachedChartData(chartParams);
+    if (cachedChart) {
+      return NextResponse.json(cachedChart, {
+        headers: {
+          "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+        },
       });
+    }
+
+    const chartResult = await withDuckDB(async (conn) => {
+      return await getChartData(conn, chartParams);
     });
 
-    return NextResponse.json(chartResult);
+    return NextResponse.json(chartResult, {
+      headers: {
+        "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+      },
+    });
   } catch (err: any) {
     console.error("Chart aggregation error:", err);
     return NextResponse.json(

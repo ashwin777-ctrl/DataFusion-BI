@@ -37,6 +37,8 @@ coverage/
 *.tsbuildinfo
 .playwright-mcp/
 /*.png
+.vscode/
+
 
 .vercel
 .env*

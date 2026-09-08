@@ -11,6 +11,8 @@ interface HeroDataCoreProps {
 
 export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onNodeClickRef = useRef(onNodeClick);
+  onNodeClickRef.current = onNodeClick;
   const { resolvedTheme } = useTheme();
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // --- 1. Scene, Camera, Renderer ---
     const scene = new THREE.Scene();
@@ -38,10 +40,10 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: "high-performance",
+      powerPreference: "default",
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
@@ -206,8 +208,8 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
       const intersects = raycaster.intersectObjects(nodeMeshes);
       if (intersects.length > 0 && intersects[0]) {
         const hit = intersects[0].object;
-        if (hit.userData.id && onNodeClick) {
-          onNodeClick(hit.userData.id);
+        if (hit.userData.id && onNodeClickRef.current) {
+          onNodeClickRef.current(hit.userData.id);
         }
       }
     };
@@ -224,12 +226,22 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     };
     window.addEventListener("resize", handleResize);
 
-    // Pause animation when scrolled off-screen
+    // Pause animation when scrolled off-screen or tab is hidden
     let isVisible = true;
     const observer = new IntersectionObserver(([entry]) => {
       isVisible = Boolean(entry?.isIntersecting);
     }, { threshold: 0.05 });
     observer.observe(container);
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        isVisible = false;
+      } else if (container) {
+        const rect = container.getBoundingClientRect();
+        isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     // --- 7. Animation Loop ---
     let animId: number;
@@ -314,15 +326,33 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     return () => {
       cancelAnimationFrame(animId);
       observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("resize", handleResize);
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("click", handleClick);
+
+      // Recursively dispose all GPU geometries, materials, and textures
+      scene.traverse((obj) => {
+        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line || obj instanceof THREE.Points) {
+          if (obj.geometry) {
+            obj.geometry.dispose();
+          }
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => m.dispose());
+            } else {
+              obj.material.dispose();
+            }
+          }
+        }
+      });
+
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [resolvedTheme, onNodeClick]);
+  }, [resolvedTheme]);
 
   if (webglSupported === false) {
     return (

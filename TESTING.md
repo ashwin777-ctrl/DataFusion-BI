@@ -157,3 +157,22 @@ Default Test Account Credentials:
 - **Email:** `ashwin@datafusion.io`
 - **Password:** `Admin@123456`
 - **Organization:** `DataFusion BI`
+
+---
+
+## 7. Performance & Latency Profiling
+
+To measure live navigation timings, TTFB, FCP, and API round trips against production or local builds:
+
+```bash
+# Run automated headless browser profiler
+node scripts/profile-production.mjs
+```
+
+This audits:
+- Landing page TTFB, DNS, and FCP
+- Authentication + route transition to `/app`
+- Dashboard API requests, HTTP status, and cache headers
+- Sequential route transitions to `/app/insights`, `/app/sources`, and `/app/prep`
+- Browser console error and warning logs
+

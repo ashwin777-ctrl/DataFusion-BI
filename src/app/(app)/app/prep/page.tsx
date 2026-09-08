@@ -15,11 +15,17 @@ import {
   Wand2,
   Trash2,
 } from "lucide-react";
+import { clientCache } from "@/lib/cache/client-cache";
 
 export default function PrepPage() {
   const router = useRouter();
-  const [sources, setSources] = useState<any[]>([]);
-  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [sources, setSources] = useState<any[]>(() => clientCache.sources || []);
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>(() => {
+    const list = clientCache.sources;
+    if (list && list.length >= 2) return [list[0].id, list[1].id];
+    if (list && list.length === 1) return [list[0].id];
+    return [];
+  });
   const [datasetName, setDatasetName] = useState("Consolidated Analytics Model");
   const [inferredJoins, setInferredJoins] = useState<any[]>([]);
   const [joins, setJoins] = useState<
@@ -32,7 +38,7 @@ export default function PrepPage() {
     }>
   >([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!clientCache.sources);
   const [inferring, setInferring] = useState(false);
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,16 +47,21 @@ export default function PrepPage() {
   useEffect(() => {
     async function load() {
       try {
-        setLoading(true);
+        if (!clientCache.sources) {
+          setLoading(true);
+        }
         const res = await fetch("/api/sources");
         const data = await res.json();
         if (res.ok) {
-          setSources(data.sources || []);
-          if (data.sources?.length >= 2) {
-            setSelectedSourceIds([data.sources[0].id, data.sources[1].id]);
-          } else if (data.sources?.length === 1) {
-            setSelectedSourceIds([data.sources[0].id]);
-          }
+          const list = data.sources || [];
+          clientCache.sources = list;
+          setSources(list);
+          setSelectedSourceIds((prev) => {
+            if (prev.length > 0) return prev;
+            if (list.length >= 2) return [list[0].id, list[1].id];
+            if (list.length === 1) return [list[0].id];
+            return [];
+          });
         }
       } catch {
         setError("Failed to load sources");

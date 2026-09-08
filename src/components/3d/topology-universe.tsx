@@ -27,6 +27,8 @@ const DEFAULT_NODES: TopologyNode[] = [
 
 export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSelectNode }: TopologyUniverseProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onSelectNodeRef = useRef(onSelectNode);
+  onSelectNodeRef.current = onSelectNode;
   const { resolvedTheme } = useTheme();
   const [selectedNode, setSelectedNode] = useState<TopologyNode | null>(null);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
@@ -50,10 +52,10 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: "high-performance",
+      powerPreference: "default",
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     container.appendChild(renderer.domElement);
 
     // Ambient & Directional Lights
@@ -151,7 +153,7 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
       if (hits.length > 0 && hits[0]) {
         const selected = hits[0].object.userData.node as TopologyNode;
         setSelectedNode(selected);
-        if (onSelectNode) onSelectNode(selected.id);
+        if (onSelectNodeRef.current) onSelectNodeRef.current(selected.id);
       }
     };
 
@@ -167,23 +169,37 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     };
     window.addEventListener("resize", onResize, { passive: true });
 
-    // Pause rendering when scrolled out of view
+    // Pause rendering when scrolled out of view or tab is hidden
     let isVisible = true;
     const observer = new IntersectionObserver(([entry]) => {
       isVisible = Boolean(entry?.isIntersecting);
     }, { threshold: 0.05 });
     observer.observe(container);
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        isVisible = false;
+      } else if (container) {
+        const rect = container.getBoundingClientRect();
+        isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const prefersReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
       if (!isVisible) return;
 
-      graphGroup.rotation.y += 0.003;
-      meshMap.forEach((m, idx) => {
-        m.mesh.rotation.y += 0.01;
-        m.mesh.position.y = m.basePos.y + Math.sin(Date.now() * 0.0018 + idx) * 0.1;
-      });
+      if (!prefersReducedMotion) {
+        graphGroup.rotation.y += 0.003;
+        meshMap.forEach((m, idx) => {
+          m.mesh.rotation.y += 0.01;
+          m.mesh.position.y = m.basePos.y + Math.sin(Date.now() * 0.0018 + idx) * 0.1;
+        });
+      }
 
       renderer.render(scene, camera);
     };
@@ -192,16 +208,34 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     return () => {
       cancelAnimationFrame(animId);
       observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("resize", onResize);
       container.removeEventListener("mousemove", onMouseMove);
       container.removeEventListener("mouseleave", onMouseLeave);
       container.removeEventListener("click", onClick);
+
+      // Recursively dispose all GPU geometries, materials, and textures to prevent WebGL memory leaks
+      scene.traverse((obj) => {
+        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line || obj instanceof THREE.Points) {
+          if (obj.geometry) {
+            obj.geometry.dispose();
+          }
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => m.dispose());
+            } else {
+              obj.material.dispose();
+            }
+          }
+        }
+      });
+
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [nodes, resolvedTheme, onSelectNode]);
+  }, [nodes, resolvedTheme]);
 
   if (webglSupported === false) {
     return (

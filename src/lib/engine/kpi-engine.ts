@@ -1,9 +1,25 @@
 import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
-import { type ColumnProfile } from "./profile";
+import { type ColumnProfile, profileParquetFile } from "./profile";
 import { statSync } from "node:fs";
 
 const KPI_CACHE = new Map<string, { kpis: KpiMetric[]; mtimeMs: number }>();
+
+export function getCachedKpis(
+  parquetPath: string,
+  options: KpiComputeOptions = {},
+): KpiMetric[] | null {
+  const normPath = parquetPath.replace(/\\/g, "/");
+  const cacheKey = `${normPath}::${options.dateColumn || ""}::${options.filterSql || ""}`;
+  try {
+    const fileMtimeMs = statSync(parquetPath).mtimeMs;
+    const cached = KPI_CACHE.get(cacheKey);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.kpis;
+    }
+  } catch {}
+  return null;
+}
 
 export interface KpiMetric {
   id: string;
@@ -33,7 +49,7 @@ export interface KpiComputeOptions {
 export async function computeDatasetKpis(
   conn: DuckDBConnection,
   parquetPath: string,
-  columns: ColumnProfile[],
+  columns?: ColumnProfile[],
   options: KpiComputeOptions = {},
 ): Promise<KpiMetric[]> {
   const normPath = parquetPath.replace(/\\/g, "/");
@@ -47,12 +63,18 @@ export async function computeDatasetKpis(
     }
   } catch {}
 
+  let resolvedColumns = columns;
+  if (!resolvedColumns || resolvedColumns.length === 0) {
+    const prof = await profileParquetFile(conn, parquetPath);
+    resolvedColumns = prof.columns;
+  }
+
   const temporalCol =
     options.dateColumn ??
-    columns.find((c) => c.role === "temporal")?.name;
+    resolvedColumns.find((c) => c.role === "temporal")?.name;
 
-  const measures = columns.filter((c) => c.role === "measure");
-  const identifiers = columns.filter((c) => c.role === "identifier");
+  const measures = resolvedColumns.filter((c) => c.role === "measure");
+  const identifiers = resolvedColumns.filter((c) => c.role === "identifier");
 
   const kpiDefinitions: Array<{
     id: string;
