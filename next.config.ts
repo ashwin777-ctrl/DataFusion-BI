@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
     // Type-safety is enforced via `npm run typecheck` in CI; lint runs separately.
     ignoreDuringBuilds: false,
   },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts", "date-fns", "three"],
+  },
   async headers() {
     // Baseline security headers (PRD §12). CSP is added in the hardening slice
     // once the exact script/style sources are known.

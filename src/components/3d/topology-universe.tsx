@@ -123,11 +123,26 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     // Interactive Raycaster
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2(-999, -999);
+    const targetMeshes = meshMap.map((m) => m.mesh);
 
     const onMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(targetMeshes);
+      const nextCursor = hits.length > 0 ? "pointer" : "default";
+      if (container.style.cursor !== nextCursor) {
+        container.style.cursor = nextCursor;
+      }
+    };
+
+    const onMouseLeave = () => {
+      mouse.set(-999, -999);
+      if (container.style.cursor !== "default") {
+        container.style.cursor = "default";
+      }
     };
 
     const onClick = () => {
@@ -140,10 +155,9 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
       }
     };
 
-    container.addEventListener("mousemove", onMouseMove);
+    container.addEventListener("mousemove", onMouseMove, { passive: true });
+    container.addEventListener("mouseleave", onMouseLeave, { passive: true });
     container.addEventListener("click", onClick);
-
-    const targetMeshes = meshMap.map((m) => m.mesh);
 
     const onResize = () => {
       if (!container) return;
@@ -151,7 +165,7 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
     };
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize, { passive: true });
 
     // Pause rendering when scrolled out of view
     let isVisible = true;
@@ -171,11 +185,6 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
         m.mesh.position.y = m.basePos.y + Math.sin(Date.now() * 0.0018 + idx) * 0.1;
       });
 
-      // Pointer glow
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(targetMeshes);
-      container.style.cursor = hits.length > 0 ? "pointer" : "default";
-
       renderer.render(scene, camera);
     };
     animate();
@@ -185,6 +194,7 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
       observer.disconnect();
       window.removeEventListener("resize", onResize);
       container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("mouseleave", onMouseLeave);
       container.removeEventListener("click", onClick);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {

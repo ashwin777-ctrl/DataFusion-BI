@@ -32,6 +32,7 @@ import { StitchConnectorsMonitor } from "@/components/dashboard/stitch-connector
 import { StitchSqlProfiler } from "@/components/dashboard/stitch-sql-profiler";
 import { StitchPipelineFlowMap } from "@/components/dashboard/stitch-pipeline-flow-map";
 import { StitchLatencyHeatmap } from "@/components/dashboard/stitch-latency-heatmap";
+import { clientCache } from "@/lib/cache/client-cache";
 
 import {
   ResponsiveContainer,
@@ -69,11 +70,17 @@ const CHART_COLORS = [
 ];
 
 export default function DashboardPage() {
-  const [datasets, setDatasets] = useState<any[]>([]);
-  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
-  const [datasetDetail, setDatasetDetail] = useState<any>(null);
-  const [kpis, setKpis] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
+  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(() => clientCache.activeDatasetId || clientCache.datasets?.[0]?.id || null);
+  const [datasetDetail, setDatasetDetail] = useState<any>(() => {
+    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
+    return initialId ? clientCache.details[initialId] || null : null;
+  });
+  const [kpis, setKpis] = useState<any[]>(() => {
+    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
+    return initialId ? clientCache.kpis[initialId] || [] : [];
+  });
+  const [loading, setLoading] = useState(!clientCache.datasets);
   const [error, setError] = useState<string | null>(null);
 
   // Active Dimension and Measure selectors for Interactive Visual Builder
@@ -94,12 +101,17 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDatasets() {
       try {
-        setLoading(true);
+        if (!clientCache.datasets) {
+          setLoading(true);
+        }
         const res = await fetch("/api/datasets");
         const data = await res.json();
         if (res.ok && data.datasets?.length > 0) {
+          clientCache.datasets = data.datasets;
           setDatasets(data.datasets);
-          setActiveDatasetId(data.datasets[0].id);
+          const firstId = data.datasets[0].id;
+          clientCache.activeDatasetId = clientCache.activeDatasetId || firstId;
+          setActiveDatasetId((prev) => prev || firstId);
         } else {
           // If no datasets exist, check sources and load them or offer 1-click sample
           const srcRes = await fetch("/api/sources");
@@ -115,6 +127,7 @@ export default function DashboardPage() {
             const autoData = await autoRes.json();
             if (autoRes.ok) {
               setDatasets([autoData]);
+              clientCache.activeDatasetId = autoData.datasetId;
               setActiveDatasetId(autoData.datasetId);
             }
           }
@@ -128,16 +141,43 @@ export default function DashboardPage() {
     loadDatasets();
   }, []);
 
-  // 2. When active dataset changes, fetch dataset details & KPIs
+  // 2. When active dataset changes, fetch dataset details & KPIs in parallel
   useEffect(() => {
     if (!activeDatasetId) return;
+    const datasetId = activeDatasetId;
+    clientCache.activeDatasetId = datasetId;
+
+    if (clientCache.details[datasetId] && clientCache.kpis[datasetId]) {
+      const data = clientCache.details[datasetId];
+      setDatasetDetail(data);
+      setKpis(clientCache.kpis[datasetId]);
+
+      const defMeas = data.profile.suggestedDefaultMeasure || data.profile.measures[0]?.name || "";
+      const defDim = data.profile.suggestedPrimaryDate || data.profile.suggestedDefaultDimension || data.profile.dimensions[0]?.name || "";
+      const secMeas = data.profile.measures.length > 1 ? data.profile.measures[1].name : "";
+
+      setSelectedMeasure(defMeas);
+      setSelectedDimension(defDim);
+      setSelectedSecondaryMeasure(secMeas);
+      setChartType(data.profile.suggestedPrimaryDate ? "area" : "bar");
+      return;
+    }
 
     async function loadActiveDataset() {
       try {
-        const res = await fetch(`/api/datasets/${activeDatasetId}`);
-        const data = await res.json();
+        const [res, kpiRes] = await Promise.all([
+          fetch(`/api/datasets/${datasetId}`),
+          fetch(`/api/datasets/${datasetId}/kpis`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }),
+        ]);
+
+        const [data, kpiData] = await Promise.all([res.json(), kpiRes.json()]);
 
         if (res.ok) {
+          clientCache.details[datasetId] = data;
           setDatasetDetail(data);
 
           // Select defaults
@@ -155,15 +195,24 @@ export default function DashboardPage() {
             setChartType("bar");
           }
 
-          // Fetch KPIs
-          const kpiRes = await fetch(`/api/datasets/${activeDatasetId}/kpis`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          });
-          const kpiData = await kpiRes.json();
           if (kpiRes.ok) {
-            setKpis(kpiData.kpis || []);
+            const computedKpis = kpiData.kpis || [];
+            clientCache.kpis[datasetId] = computedKpis;
+            setKpis(computedKpis);
+          }
+
+          // Idle background prefetch of insights so navigating to Insights tab is instantaneous
+          if (!clientCache.insights[datasetId]) {
+            setTimeout(() => {
+              fetch(`/api/datasets/${datasetId}/insights`)
+                .then((r) => r.json())
+                .then((ins) => {
+                  if (ins && !ins.error) {
+                    clientCache.insights[datasetId] = ins;
+                  }
+                })
+                .catch(() => {});
+            }, 250);
           }
         } else {
           setError(data.error || "Failed to load dataset details");

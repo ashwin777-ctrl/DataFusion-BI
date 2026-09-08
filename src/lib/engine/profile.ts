@@ -1,5 +1,8 @@
 import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
+import { statSync } from "node:fs";
+
+const PROFILE_CACHE = new Map<string, { profile: DatasetProfile; mtimeMs: number }>();
 
 export type ColumnRole = "measure" | "dimension" | "temporal" | "identifier" | "categorical";
 export type InferredType =
@@ -60,6 +63,14 @@ export async function profileParquetFile(
   parquetPath: string,
 ): Promise<DatasetProfile> {
   const normPath = parquetPath.replace(/\\/g, "/");
+  let fileMtimeMs = 0;
+  try {
+    fileMtimeMs = statSync(parquetPath).mtimeMs;
+    const cached = PROFILE_CACHE.get(normPath);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.profile;
+    }
+  } catch {}
 
   // 1. Get row count
   const countRes = await queryDuckDB<{ count: number }>(
@@ -231,7 +242,7 @@ export async function profileParquetFile(
       ? Math.max(0, Math.min(100, Math.round(100 - (totalNullCells / totalCells) * 100)))
       : 100;
 
-  return {
+  const result: DatasetProfile = {
     rowCount: totalRows,
     columnCount: columnProfiles.length,
     columns: columnProfiles,
@@ -244,6 +255,12 @@ export async function profileParquetFile(
     suggestedDefaultDimension,
     suggestedDefaultMeasure,
   };
+
+  if (fileMtimeMs > 0) {
+    PROFILE_CACHE.set(normPath, { profile: result, mtimeMs: fileMtimeMs });
+  }
+
+  return result;
 }
 
 function classifyColumn(

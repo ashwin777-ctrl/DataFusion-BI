@@ -4,7 +4,9 @@ import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { withDuckDB, queryDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync, unlinkSync, statSync } from "node:fs";
+
+const PREVIEW_CACHE = new Map<string, { preview: any[]; mtimeMs: number }>();
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +40,24 @@ export async function GET(
       );
     }
 
+    const norm = parquetPath.replace(/\\/g, "/");
+    let fileMtimeMs = 0;
+    try {
+      fileMtimeMs = statSync(parquetPath).mtimeMs;
+    } catch {}
+
+    const cachedPreview = fileMtimeMs > 0 ? PREVIEW_CACHE.get(norm) : null;
+    const hasCachedPreview = cachedPreview && cachedPreview.mtimeMs === fileMtimeMs;
+
     const { profile, preview } = await withDuckDB(async (conn) => {
       const prof = await profileParquetFile(conn, parquetPath);
-      const norm = parquetPath.replace(/\\/g, "/");
+      if (hasCachedPreview) {
+        return { profile: prof, preview: cachedPreview.preview };
+      }
       const prev = await queryDuckDB(conn, `SELECT * FROM read_parquet('${norm}') LIMIT 100`);
+      if (fileMtimeMs > 0) {
+        PREVIEW_CACHE.set(norm, { preview: prev, mtimeMs: fileMtimeMs });
+      }
       return { profile: prof, preview: prev };
     });
 

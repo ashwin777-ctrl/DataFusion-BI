@@ -1,6 +1,9 @@
 import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
 import { type ColumnProfile } from "./profile";
+import { statSync } from "node:fs";
+
+const KPI_CACHE = new Map<string, { kpis: KpiMetric[]; mtimeMs: number }>();
 
 export interface KpiMetric {
   id: string;
@@ -34,6 +37,16 @@ export async function computeDatasetKpis(
   options: KpiComputeOptions = {},
 ): Promise<KpiMetric[]> {
   const normPath = parquetPath.replace(/\\/g, "/");
+  const cacheKey = `${normPath}::${options.dateColumn || ""}::${options.filterSql || ""}`;
+  let fileMtimeMs = 0;
+  try {
+    fileMtimeMs = statSync(parquetPath).mtimeMs;
+    const cached = KPI_CACHE.get(cacheKey);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.kpis;
+    }
+  } catch {}
+
   const temporalCol =
     options.dateColumn ??
     columns.find((c) => c.role === "temporal")?.name;
@@ -167,6 +180,10 @@ export async function computeDatasetKpis(
       sparkline,
       format: def.format,
     });
+  }
+
+  if (fileMtimeMs > 0) {
+    KPI_CACHE.set(cacheKey, { kpis: results, mtimeMs: fileMtimeMs });
   }
 
   return results;

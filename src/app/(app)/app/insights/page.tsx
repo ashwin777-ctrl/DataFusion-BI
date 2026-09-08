@@ -12,23 +12,45 @@ import {
   ArrowRight,
   Target,
 } from "lucide-react";
+import { clientCache } from "@/lib/cache/client-cache";
 
 export default function InsightsPage() {
-  const [datasets, setDatasets] = useState<any[]>([]);
-  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
-  const [report, setReport] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
+  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(() => clientCache.activeDatasetId || clientCache.datasets?.[0]?.id || null);
+  const [report, setReport] = useState<any>(() => {
+    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
+    return initialId ? clientCache.insights[initialId] || null : null;
+  });
+  const [loading, setLoading] = useState(!clientCache.datasets);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     async function loadDatasets() {
       try {
-        setLoading(true);
+        if (!clientCache.datasets) {
+          setLoading(true);
+        }
         const res = await fetch("/api/datasets");
         const data = await res.json();
         if (res.ok && data.datasets?.length > 0) {
+          clientCache.datasets = data.datasets;
           setDatasets(data.datasets);
-          setActiveDatasetId(data.datasets[0].id);
+          const firstId = data.datasets[0].id;
+          clientCache.activeDatasetId = clientCache.activeDatasetId || firstId;
+          setActiveDatasetId((prev) => prev || firstId);
+
+          // Eagerly prefetch first dataset's insights if not cached
+          if (!clientCache.insights[firstId]) {
+            fetch(`/api/datasets/${firstId}/insights`)
+              .then((r) => r.json())
+              .then((rep) => {
+                if (rep && !rep.error) {
+                  clientCache.insights[firstId] = rep;
+                  setReport((current: any) => current || rep);
+                }
+              })
+              .catch(() => {});
+          }
         }
       } catch {
         // ignore
@@ -41,13 +63,21 @@ export default function InsightsPage() {
 
   useEffect(() => {
     if (!activeDatasetId) return;
+    const datasetId = activeDatasetId;
+    clientCache.activeDatasetId = datasetId;
+
+    if (clientCache.insights[datasetId]) {
+      setReport(clientCache.insights[datasetId]);
+      return;
+    }
 
     async function loadInsights() {
       try {
         setRefreshing(true);
-        const res = await fetch(`/api/datasets/${activeDatasetId}/insights`);
+        const res = await fetch(`/api/datasets/${datasetId}/insights`);
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && !data.error) {
+          clientCache.insights[datasetId] = data;
           setReport(data);
         }
       } catch {

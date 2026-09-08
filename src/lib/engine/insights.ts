@@ -2,6 +2,9 @@ import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
 import { type DatasetProfile } from "./profile";
 import { type KpiMetric, formatKpiValue } from "./kpi-engine";
+import { statSync } from "node:fs";
+
+const INSIGHTS_CACHE = new Map<string, { report: InsightsReport; mtimeMs: number }>();
 
 export interface BusinessInsight {
   id: string;
@@ -37,6 +40,15 @@ export async function generateDatasetInsights(
   _kpis: KpiMetric[],
 ): Promise<InsightsReport> {
   const normPath = parquetPath.replace(/\\/g, "/");
+  let fileMtimeMs = 0;
+  try {
+    fileMtimeMs = statSync(parquetPath).mtimeMs;
+    const cached = INSIGHTS_CACHE.get(normPath);
+    if (cached && cached.mtimeMs === fileMtimeMs) {
+      return cached.report;
+    }
+  } catch {}
+
   const insights: BusinessInsight[] = [];
   const keyFindings: string[] = [];
 
@@ -264,7 +276,7 @@ export async function generateDatasetInsights(
       : "Metrics demonstrate balanced distribution across core operational segments."
   }`;
 
-  return {
+  const report: InsightsReport = {
     executiveSummary,
     keyFindings,
     insights,
@@ -274,4 +286,10 @@ export async function generateDatasetInsights(
       issuesFound: dataQualityIssues,
     },
   };
+
+  if (fileMtimeMs > 0) {
+    INSIGHTS_CACHE.set(normPath, { report, mtimeMs: fileMtimeMs });
+  }
+
+  return report;
 }
