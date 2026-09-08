@@ -37,3 +37,7 @@ coverage/
 *.tsbuildinfo
 .playwright-mcp/
 /*.png
+
+.vercel
+.env*
+scripts/.active-session.txt

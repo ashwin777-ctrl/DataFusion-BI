@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import PDFDocument from "pdfkit";
 import { type DuckDBConnection } from "@duckdb/node-api";
 import { queryDuckDB } from "./duckdb";
 import { type DatasetProfile } from "./profile";
@@ -314,3 +315,56 @@ export function generatePrintableReportHtml(params: {
 </html>
   `;
 }
+
+/**
+ * Generate a production binary PDF report buffer using PDFKit.
+ */
+export async function exportToPdf(
+  title: string,
+  datasetName: string,
+  profile: DatasetProfile,
+  kpis: KpiMetric[],
+  insights: InsightsReport,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    doc.fontSize(20).text(title, { align: "left" });
+    doc.fontSize(10).fillColor("#666666").text(`Dataset: ${datasetName} | Records: ${profile.rowCount.toLocaleString()} | Generated: ${new Date().toLocaleDateString()}`);
+    doc.moveDown();
+
+    doc.fontSize(12).fillColor("#000000").text("Executive Summary", { underline: true });
+    doc.fontSize(10).fillColor("#333333").text(insights.executiveSummary || "N/A");
+    doc.moveDown();
+
+    doc.fontSize(12).fillColor("#000000").text("Key Performance Indicators", { underline: true });
+    doc.moveDown(0.5);
+    for (const k of kpis) {
+      doc.fontSize(10).fillColor("#111111").text(`• ${k.name}: ${k.formattedValue}`);
+    }
+    doc.moveDown();
+
+    doc.fontSize(12).fillColor("#000000").text("Key Findings", { underline: true });
+    doc.moveDown(0.5);
+    for (const f of insights.keyFindings) {
+      doc.fontSize(10).fillColor("#333333").text(`- ${f}`);
+    }
+    doc.moveDown();
+
+    doc.fontSize(12).fillColor("#000000").text("Strategic Insights", { underline: true });
+    doc.moveDown(0.5);
+    for (const i of insights.insights) {
+      doc.fontSize(10).fillColor("#111111").text(`[${i.category.toUpperCase()}] ${i.title}: ${i.description}`);
+      if (i.recommendation) {
+        doc.fontSize(9).fillColor("#0055aa").text(`  Recommendation: ${i.recommendation}`);
+      }
+    }
+
+    doc.end();
+  });
+}
+

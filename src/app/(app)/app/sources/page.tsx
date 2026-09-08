@@ -79,6 +79,13 @@ export default function SourcesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "tsv", "xls", "xlsx"].includes(ext || "")) {
+      setError("Only CSV, TSV, XLS, and XLSX files are supported.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     try {
       setUploading(true);
       setError(null);
@@ -473,8 +480,9 @@ export default function SourcesPage() {
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="font-medium text-foreground block mb-1">Host</label>
+                <label htmlFor="pgHost" className="font-medium text-foreground block mb-1">Host</label>
                 <input
+                  id="pgHost"
                   type="text"
                   value={pgHost}
                   onChange={(e) => setPgHost(e.target.value)}
@@ -483,8 +491,9 @@ export default function SourcesPage() {
                 />
               </div>
               <div>
-                <label className="font-medium text-foreground block mb-1">Port</label>
+                <label htmlFor="pgPort" className="font-medium text-foreground block mb-1">Port</label>
                 <input
+                  id="pgPort"
                   type="text"
                   value={pgPort}
                   onChange={(e) => setPgPort(e.target.value)}
@@ -493,8 +502,9 @@ export default function SourcesPage() {
                 />
               </div>
               <div>
-                <label className="font-medium text-foreground block mb-1">Database Name</label>
+                <label htmlFor="pgDatabase" className="font-medium text-foreground block mb-1">Database Name</label>
                 <input
+                  id="pgDatabase"
                   type="text"
                   value={pgDatabase}
                   onChange={(e) => setPgDatabase(e.target.value)}
@@ -503,8 +513,9 @@ export default function SourcesPage() {
                 />
               </div>
               <div>
-                <label className="font-medium text-foreground block mb-1">Username</label>
+                <label htmlFor="pgUser" className="font-medium text-foreground block mb-1">Username</label>
                 <input
+                  id="pgUser"
                   type="text"
                   value={pgUser}
                   onChange={(e) => setPgUser(e.target.value)}
@@ -513,8 +524,9 @@ export default function SourcesPage() {
                 />
               </div>
               <div className="col-span-2">
-                <label className="font-medium text-foreground block mb-1">Password</label>
+                <label htmlFor="pgPassword" className="font-medium text-foreground block mb-1">Password</label>
                 <input
+                  id="pgPassword"
                   type="password"
                   value={pgPassword}
                   onChange={(e) => setPgPassword(e.target.value)}

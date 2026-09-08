@@ -23,9 +23,12 @@ export async function GET() {
 
     return NextResponse.json({ datasets: datasetsList });
   } catch (err: any) {
+    if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT" || err?.status === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: err.message || "Failed to fetch datasets" },
-      { status: 500 },
+      { status: err.status || 500 },
     );
   }
 }

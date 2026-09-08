@@ -6,7 +6,7 @@ import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engi
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 import { generateDatasetInsights } from "@/lib/engine/insights";
-import { exportToCsv, exportToExcel, generatePrintableReportHtml } from "@/lib/engine/export";
+import { exportToCsv, exportToExcel, exportToPdf, generatePrintableReportHtml } from "@/lib/engine/export";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +65,29 @@ export async function POST(
       });
     }
 
-    // PDF / Printable Report HTML
+    if (format === "pdf") {
+      const pdfBuffer = await withDuckDB(async (conn) => {
+        const profile = await profileParquetFile(conn, parquetPath);
+        const kpis = await computeDatasetKpis(conn, parquetPath, profile.columns, { filterSql });
+        const insights = await generateDatasetInsights(conn, parquetPath, profile, kpis);
+        return await exportToPdf(
+          "Executive Business Intelligence Report",
+          dataset.name,
+          profile,
+          kpis,
+          insights,
+        );
+      });
+
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${dataset.name.replace(/[^a-z0-9_]/gi, "_")}.pdf"`,
+        },
+      });
+    }
+
+    // Default: Printable Report HTML
     const reportHtml = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);
       const kpis = await computeDatasetKpis(conn, parquetPath, profile.columns, { filterSql });

@@ -1,9 +1,25 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { SESSION_COOKIE } from "./cookies";
 import { resolveSessionByToken, type ResolvedSession } from "./session";
+
+export class UnauthorizedError extends Error {
+  status = 401;
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+export class ForbiddenError extends Error {
+  status = 403;
+  constructor(message = "No active organization context") {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
 
 /**
  * Request-scoped current-user access for Server Components, Server Actions, and
@@ -21,10 +37,22 @@ export const getSession = cache(async (): Promise<ResolvedSession | null> => {
   return resolveSessionByToken(token);
 });
 
-/** Require an authenticated user or redirect to /login. */
+/** Require an authenticated user or redirect to /login (or throw UnauthorizedError for API). */
 export async function requireUser(): Promise<ResolvedSession> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) {
+    try {
+      const h = await headers();
+      const accept = h.get("accept") || "";
+      const path = h.get("x-url") || h.get("x-invoke-path") || "";
+      if (accept.includes("application/json") || path.includes("/api/")) {
+        throw new UnauthorizedError();
+      }
+    } catch (e) {
+      if (e instanceof UnauthorizedError) throw e;
+    }
+    redirect("/login");
+  }
   return session;
 }
 
@@ -39,6 +67,18 @@ export async function requireOrg(): Promise<{
 }> {
   const session = await requireUser();
   const orgId = session.activeOrg?.id ?? session.memberships[0]?.id ?? null;
-  if (!orgId) redirect("/onboarding");
+  if (!orgId) {
+    try {
+      const h = await headers();
+      const accept = h.get("accept") || "";
+      if (accept.includes("application/json")) {
+        throw new ForbiddenError();
+      }
+    } catch (e) {
+      if (e instanceof ForbiddenError) throw e;
+    }
+    redirect("/onboarding");
+  }
   return { session, orgId };
 }
+

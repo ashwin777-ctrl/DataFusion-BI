@@ -28,6 +28,19 @@ export async function POST(req: NextRequest) {
     const sha256 = createHash("sha256").update(buffer).digest("hex");
 
     const lower = originalName.toLowerCase();
+    const isSupported =
+      lower.endsWith(".xlsx") ||
+      lower.endsWith(".xls") ||
+      lower.endsWith(".tsv") ||
+      lower.endsWith(".csv");
+
+    if (!isSupported) {
+      return NextResponse.json(
+        { error: "Only CSV, TSV, XLS, and XLSX files are supported." },
+        { status: 400 },
+      );
+    }
+
     const detectedKind = lower.endsWith(".xlsx")
       ? "xlsx"
       : lower.endsWith(".xls")

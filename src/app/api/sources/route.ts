@@ -18,6 +18,9 @@ export async function GET() {
 
     return NextResponse.json({ sources: sourcesList });
   } catch (err: any) {
+    if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT" || err?.status === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: err.message || "Failed to fetch sources" },
       { status: err.status || 500 },

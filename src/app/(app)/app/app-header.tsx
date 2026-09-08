@@ -120,7 +120,7 @@ export function AppHeader({
       </div>
 
       {/* Mobile/Tablet Subnav */}
-      <div className="flex lg:hidden border-t border-border bg-card px-4 py-1.5 overflow-x-auto gap-2">
+      <div className="flex lg:hidden border-t border-border bg-card px-4 py-1.5 overflow-x-auto gap-2 w-full max-w-full">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active =

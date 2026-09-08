@@ -270,6 +270,7 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <select
+              aria-label="Select active dataset"
               value={activeDatasetId || ""}
               onChange={(e) => setActiveDatasetId(e.target.value)}
               className="rounded-lg border border-input bg-card px-3 py-1.5 text-base font-bold text-foreground focus:ring-2 focus:ring-accent"
@@ -474,6 +475,7 @@ export default function DashboardPage() {
             {/* Time bucket (if temporal) */}
             {(chartType === "line" || chartType === "area") && (
               <select
+                aria-label="Select time aggregation"
                 value={timeBucket}
                 onChange={(e) => setTimeBucket(e.target.value as any)}
                 className="rounded-md border border-input bg-background px-2 py-1 text-xs font-medium"
@@ -492,6 +494,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Dimension:</span>
               <select
+                aria-label="Select dimension"
                 value={selectedDimension}
                 onChange={(e) => setSelectedDimension(e.target.value)}
                 className="rounded-md border border-input bg-background px-2 py-1 font-medium text-foreground"
@@ -508,6 +511,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Measure:</span>
               <select
+                aria-label="Select measure"
                 value={selectedMeasure}
                 onChange={(e) => setSelectedMeasure(e.target.value)}
                 className="rounded-md border border-input bg-background px-2 py-1 font-semibold text-accent"
@@ -525,6 +529,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-1">
                 <span className="text-muted-foreground">Y-Axis:</span>
                 <select
+                  aria-label="Select secondary measure"
                   value={selectedSecondaryMeasure}
                   onChange={(e) => setSelectedSecondaryMeasure(e.target.value)}
                   className="rounded-md border border-input bg-background px-2 py-1 font-semibold text-emerald-600"

@@ -29,7 +29,7 @@ const PG_HOME = process.env.PG_HOME ?? join(ROOT, ".pgsql", "pg");
 const PG_BIN = join(PG_HOME, "bin");
 const PGDATA = process.env.PGDATA ?? join(ROOT, ".pgdata");
 const PORT = process.env.PGPORT ?? "5434";
-const LOGFILE = join(PGDATA, "server.log");
+const LOGFILE = join(ROOT, ".pg-start.log");
 
 // Superuser for cluster-level ops (never written to .env — dev-only defaults).
 const SUPER_USER = process.env.PG_SUPERUSER ?? "bi_super";

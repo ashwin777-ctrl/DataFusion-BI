@@ -85,16 +85,17 @@ export default function LandingPage() {
             <a href="#signin" className="transition-colors hover:text-white">Sign In</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <ThemeSwitcher />
-            <a href="#signin">
+            <a href="#signin" className="hidden sm:inline-flex">
               <Button variant="ghost" size="sm" className="text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/10">
                 Sign In
               </Button>
             </a>
             <Link href="/login">
-              <Button size="sm" className="gap-1.5 text-xs font-bold bg-white text-black hover:bg-zinc-200 shadow-md">
-                <span>Open Login Portal</span>
+              <Button size="sm" className="gap-1.5 text-xs font-bold bg-white text-black hover:bg-zinc-200 shadow-md px-2.5 sm:px-3">
+                <span className="hidden sm:inline">Open Login Portal</span>
+                <span className="sm:hidden">Login</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
