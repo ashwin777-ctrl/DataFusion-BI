@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, queryDuckDB, getSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
+import { withDuckDB, queryDuckDB, resolveSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { unlinkSync, existsSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
@@ -37,8 +37,8 @@ export async function GET(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
-    const parquetPath = sourceData.source.parquetPath || getSourceParquetPath(orgId, sourceId);
-    await ensureStorageBlob(parquetPath);
+    const parquetPath = resolveSourceParquetPath(orgId, sourceId, sourceData.source.parquetPath);
+    await ensureStorageBlob(parquetPath, sourceData.source.parquetPath);
     let previewRows: any[] = [];
 
     if (existsSync(parquetPath)) {
@@ -48,11 +48,18 @@ export async function GET(
       });
     }
 
-    return NextResponse.json({
-      source: sourceData.source,
-      columns: sourceData.columns,
-      preview: previewRows,
-    });
+    return NextResponse.json(
+      {
+        source: sourceData.source,
+        columns: sourceData.columns,
+        preview: previewRows,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+        },
+      },
+    );
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to fetch source details" },

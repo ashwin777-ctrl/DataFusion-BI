@@ -41,15 +41,15 @@ const cleanConnectionString = isRemoteOrSsl
   : env.DATABASE_URL;
 
 const pool =
-  global.__biPool ??
+  (globalThis as any).__biPool ??
   new Pool({
     connectionString: cleanConnectionString,
     ssl: isRemoteOrSsl ? { rejectUnauthorized: false } : undefined,
-    max: 10,
+    max: isRemoteOrSsl ? 5 : 10,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 5_000,
   });
-if (env.NODE_ENV !== "production") global.__biPool = pool;
+(globalThis as any).__biPool = pool;
 
 export type Db = NodePgDatabase<typeof schema>;
 

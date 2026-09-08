@@ -3,7 +3,7 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { desc, eq } from "drizzle-orm";
 import { consolidateDataset, type JoinConfig } from "@/lib/engine/consolidate";
-import { getSourceParquetPath, ensureStorageBlob, persistStorageBlob } from "@/lib/engine/duckdb";
+import { resolveSourceParquetPath, ensureStorageBlob, persistStorageBlob } from "@/lib/engine/duckdb";
 import { randomUUID } from "node:crypto";
 import { statSync, readFileSync } from "node:fs";
 
@@ -21,7 +21,14 @@ export async function GET() {
         .orderBy(desc(schema.datasets.createdAt));
     });
 
-    return NextResponse.json({ datasets: datasetsList });
+    return NextResponse.json(
+      { datasets: datasetsList },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=5, stale-while-revalidate=30",
+        },
+      },
+    );
   } catch (err: any) {
     if (err?.digest?.includes?.("NEXT_REDIRECT") || err?.message === "NEXT_REDIRECT" || err?.status === 401) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,27 +59,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Retrieve sources
-    const dbSources = await withOrg(orgId, async (db) => {
-      return await db.select().from(schema.sources).where(eq(schema.sources.orgId, orgId));
-    });
+    // Fetch sources from DB under RLS
+    const selectedSources = await withOrg(orgId, async (db) => {
+      return await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.orgId, orgId));
+    }).then((sources) => sources.filter((s) => sourceIds.includes(s.id)));
 
-    const selectedSources = dbSources.filter((s) => sourceIds.includes(s.id));
-    if (selectedSources.length !== sourceIds.length || selectedSources.length === 0 || !selectedSources[0]) {
+    if (selectedSources.length === 0) {
       return NextResponse.json(
-        { error: "One or more selected sources could not be found" },
-        { status: 400 },
+        { error: "No valid sources found for the given IDs" },
+        { status: 404 },
       );
     }
 
     const datasetId = randomUUID();
     const primarySource = selectedSources[0];
+    if (!primarySource) {
+      return NextResponse.json(
+        { error: "No valid sources found for the given IDs" },
+        { status: 404 },
+      );
+    }
 
     // Ensure all selected source Parquet files are present locally
     await Promise.all(
-      selectedSources.map((s) =>
-        ensureStorageBlob(s.parquetPath || getSourceParquetPath(orgId, s.id)),
-      ),
+      selectedSources.map((s) => {
+        const canonicalPath = resolveSourceParquetPath(orgId, s.id, s.parquetPath);
+        return ensureStorageBlob(canonicalPath, s.parquetPath);
+      }),
     );
 
     const consolidationRes = await consolidateDataset({
@@ -82,7 +98,7 @@ export async function POST(req: NextRequest) {
       sources: selectedSources.map((s, idx) => ({
         sourceId: s.id,
         sourceName: s.alias,
-        parquetPath: s.parquetPath || getSourceParquetPath(orgId, s.id),
+        parquetPath: resolveSourceParquetPath(orgId, s.id, s.parquetPath),
         alias: s.alias,
         role: idx === 0 ? "fact" : "dimension",
       })),

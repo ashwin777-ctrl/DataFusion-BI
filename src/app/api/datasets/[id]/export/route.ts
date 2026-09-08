@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
+import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 import { generateDatasetInsights } from "@/lib/engine/insights";
@@ -34,8 +34,8 @@ export async function POST(
       return NextResponse.json({ error: "Dataset not found" }, { status: 404 });
     }
 
-    const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
-    await ensureStorageBlob(parquetPath);
+    const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
+    await ensureStorageBlob(parquetPath, dataset.duckdbPath);
 
     if (format === "csv") {
       const csvBuffer = await withDuckDB(async (conn) => {

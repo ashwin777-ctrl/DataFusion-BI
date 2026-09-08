@@ -12,10 +12,55 @@ import { pool } from "@/lib/db";
 let instancePromise: Promise<DuckDBInstance> | null = null;
 
 /**
+ * Normalizes any stored file path (Windows absolute, relative, or serverless)
+ * into a valid local path anchored to the current runtime's getStorageRoot().
+ */
+export function toCanonicalLocalPath(filePath?: string | null): string {
+  if (!filePath) return "";
+  const norm = filePath.replace(/\\/g, "/");
+  const storageRoot = getStorageRoot().replace(/\\/g, "/");
+
+  // If already starts with current storage root, return resolved
+  if (norm.startsWith(storageRoot)) {
+    return resolve(norm);
+  }
+
+  // Extract relative path after /storage/ or storage/
+  const match = norm.match(/(?:^|\/)storage\/(.+)$/);
+  if (match && match[1]) {
+    return resolve(join(getStorageRoot(), match[1]));
+  }
+
+  // If it's a Windows drive path on Linux/Serverless (e.g. C:/...)
+  if (/^[a-zA-Z]:\//.test(norm)) {
+    const parts = norm.split("/");
+    const fileName = basename(norm);
+    const typeIdx = parts.findIndex((p) => p === "datasets" || p === "sources" || p === "exports");
+    if (typeIdx > 1 && parts[typeIdx - 1] && parts[typeIdx]) {
+      const orgId = parts[typeIdx - 1]!;
+      const type = parts[typeIdx]!;
+      return resolve(join(getStorageRoot(), orgId, type, fileName));
+    }
+    return resolve(join(getStorageRoot(), fileName));
+  }
+
+  return resolve(norm);
+}
+
+export function resolveDatasetParquetPath(orgId: string, datasetId: string, _storedPath?: string | null): string {
+  return getDatasetParquetPath(orgId, datasetId);
+}
+
+export function resolveSourceParquetPath(orgId: string, sourceId: string, _storedPath?: string | null): string {
+  return getSourceParquetPath(orgId, sourceId);
+}
+
+/**
  * Persist a file buffer to PostgreSQL storage_blobs so it survives serverless cold starts.
  */
 export async function persistStorageBlob(filePath: string, buffer: Buffer): Promise<void> {
   const norm = filePath.replace(/\\/g, "/");
+  const canonicalNorm = toCanonicalLocalPath(filePath).replace(/\\/g, "/");
   try {
     const client = await pool.connect();
     try {
@@ -25,6 +70,14 @@ export async function persistStorageBlob(filePath: string, buffer: Buffer): Prom
          ON CONFLICT (path) DO UPDATE SET content = EXCLUDED.content, byte_size = EXCLUDED.byte_size, updated_at = NOW()`,
         [norm, buffer, buffer.byteLength],
       );
+      if (canonicalNorm !== norm) {
+        await client.query(
+          `INSERT INTO storage_blobs (path, content, byte_size, updated_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (path) DO UPDATE SET content = EXCLUDED.content, byte_size = EXCLUDED.byte_size, updated_at = NOW()`,
+          [canonicalNorm, buffer, buffer.byteLength],
+        );
+      }
     } finally {
       client.release();
     }
@@ -37,9 +90,12 @@ export async function persistStorageBlob(filePath: string, buffer: Buffer): Prom
  * Ensure a file exists on the local filesystem. If missing (e.g. fresh serverless container),
  * restores it from PostgreSQL storage_blobs.
  */
-export async function ensureStorageBlob(filePath: string): Promise<boolean> {
+export async function ensureStorageBlob(filePath: string, originalStoredPath?: string | null): Promise<boolean> {
   if (!filePath) return false;
-  const norm = filePath.replace(/\\/g, "/");
+  // Always anchor to a valid writable path in getStorageRoot()
+  const localTarget = toCanonicalLocalPath(filePath);
+  const norm = localTarget.replace(/\\/g, "/");
+  const origNorm = originalStoredPath ? originalStoredPath.replace(/\\/g, "/") : null;
 
   if (existsSync(norm)) {
     try {
@@ -53,10 +109,15 @@ export async function ensureStorageBlob(filePath: string): Promise<boolean> {
     const client = await pool.connect();
     try {
       const fileName = basename(norm);
-      const res = await client.query(
-        `SELECT content FROM storage_blobs WHERE path = $1 OR path LIKE $2 LIMIT 1`,
-        [norm, `%${fileName}`],
-      );
+      const queryParams: any[] = [norm, `%${fileName}`];
+      let querySql = `SELECT content FROM storage_blobs WHERE path = $1 OR path LIKE $2`;
+      if (origNorm && origNorm !== norm) {
+        queryParams.push(origNorm);
+        querySql += ` OR path = $${queryParams.length}`;
+      }
+      querySql += ` LIMIT 1`;
+
+      const res = await client.query(querySql, queryParams);
 
       if (res.rows.length > 0 && res.rows[0]?.content) {
         const dir = dirname(norm);

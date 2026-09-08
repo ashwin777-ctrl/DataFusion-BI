@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
+import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { getChartData, type ChartAggregationParams } from "@/lib/engine/analytics";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +32,8 @@ export async function POST(
       return NextResponse.json({ error: "Dataset not found" }, { status: 404 });
     }
 
-    const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
-    await ensureStorageBlob(parquetPath);
+    const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
+    await ensureStorageBlob(parquetPath, dataset.duckdbPath);
 
     const chartResult = await withDuckDB(async (conn) => {
       return await getChartData(conn, {

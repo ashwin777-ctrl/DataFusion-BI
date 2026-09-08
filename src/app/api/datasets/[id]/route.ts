@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { withDuckDB, queryDuckDB, getDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
+import { withDuckDB, queryDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
 import { existsSync, unlinkSync, statSync } from "node:fs";
 
@@ -31,8 +31,8 @@ export async function GET(
       return NextResponse.json({ error: "Dataset not found" }, { status: 404 });
     }
 
-    const parquetPath = dataset.duckdbPath || getDatasetParquetPath(orgId, datasetId);
-    const hasBlob = await ensureStorageBlob(parquetPath);
+    const parquetPath = resolveDatasetParquetPath(orgId, datasetId, dataset.duckdbPath);
+    const hasBlob = await ensureStorageBlob(parquetPath, dataset.duckdbPath);
     if (!hasBlob || !existsSync(parquetPath)) {
       return NextResponse.json(
         { error: "Dataset storage file not found" },
@@ -61,11 +61,14 @@ export async function GET(
       return { profile: prof, preview: prev };
     });
 
-    return NextResponse.json({
-      dataset,
-      profile,
-      preview,
-    });
+    return NextResponse.json(
+      { dataset, profile, preview },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=10, stale-while-revalidate=60",
+        },
+      },
+    );
   } catch (err: any) {
     console.error("Dataset detail error:", err);
     return NextResponse.json(

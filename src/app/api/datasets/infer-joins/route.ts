@@ -3,7 +3,7 @@ import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { inferDatasetRelationships } from "@/lib/engine/relationships";
-import { withDuckDB, getSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
+import { withDuckDB, resolveSourceParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +35,10 @@ export async function POST(req: NextRequest) {
 
     // Ensure all source Parquet files are present on the local filesystem (restores from PostgreSQL if serverless cold-started)
     await Promise.all(
-      sources.map((s) =>
-        ensureStorageBlob(s.parquetPath || getSourceParquetPath(orgId, s.id)),
-      ),
+      sources.map((s) => {
+        const canonicalPath = resolveSourceParquetPath(orgId, s.id, s.parquetPath);
+        return ensureStorageBlob(canonicalPath, s.parquetPath);
+      }),
     );
 
     const allInferred = await withDuckDB(async (conn) => {
@@ -52,12 +53,12 @@ export async function POST(req: NextRequest) {
               {
                 id: s1.id,
                 name: s1.alias,
-                parquetPath: s1.parquetPath || getSourceParquetPath(orgId, s1.id),
+                parquetPath: resolveSourceParquetPath(orgId, s1.id, s1.parquetPath),
               },
               {
                 id: s2.id,
                 name: s2.alias,
-                parquetPath: s2.parquetPath || getSourceParquetPath(orgId, s2.id),
+                parquetPath: resolveSourceParquetPath(orgId, s2.id, s2.parquetPath),
               },
             );
             results.push(...inferred);
