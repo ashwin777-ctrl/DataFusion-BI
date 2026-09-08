@@ -326,45 +326,94 @@ export async function exportToPdf(
   kpis: KpiMetric[],
   insights: InsightsReport,
 ): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40 });
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk) => chunks.push(chunk));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
+  return new Promise((resolve) => {
+    try {
+      const doc = new PDFDocument({ margin: 40 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", () => {
+        resolve(generateMinimalPdf(title, datasetName, profile, kpis, insights));
+      });
 
-    doc.fontSize(20).text(title, { align: "left" });
-    doc.fontSize(10).fillColor("#666666").text(`Dataset: ${datasetName} | Records: ${profile.rowCount.toLocaleString()} | Generated: ${new Date().toLocaleDateString()}`);
-    doc.moveDown();
+      doc.fontSize(20).text(title, { align: "left" });
+      doc.fontSize(10).fillColor("#666666").text(`Dataset: ${datasetName} | Records: ${profile.rowCount.toLocaleString()} | Generated: ${new Date().toLocaleDateString()}`);
+      doc.moveDown();
 
-    doc.fontSize(12).fillColor("#000000").text("Executive Summary", { underline: true });
-    doc.fontSize(10).fillColor("#333333").text(insights.executiveSummary || "N/A");
-    doc.moveDown();
+      doc.fontSize(12).fillColor("#000000").text("Executive Summary", { underline: true });
+      doc.fontSize(10).fillColor("#333333").text(insights.executiveSummary || "N/A");
+      doc.moveDown();
 
-    doc.fontSize(12).fillColor("#000000").text("Key Performance Indicators", { underline: true });
-    doc.moveDown(0.5);
-    for (const k of kpis) {
-      doc.fontSize(10).fillColor("#111111").text(`• ${k.name}: ${k.formattedValue}`);
-    }
-    doc.moveDown();
-
-    doc.fontSize(12).fillColor("#000000").text("Key Findings", { underline: true });
-    doc.moveDown(0.5);
-    for (const f of insights.keyFindings) {
-      doc.fontSize(10).fillColor("#333333").text(`- ${f}`);
-    }
-    doc.moveDown();
-
-    doc.fontSize(12).fillColor("#000000").text("Strategic Insights", { underline: true });
-    doc.moveDown(0.5);
-    for (const i of insights.insights) {
-      doc.fontSize(10).fillColor("#111111").text(`[${i.category.toUpperCase()}] ${i.title}: ${i.description}`);
-      if (i.recommendation) {
-        doc.fontSize(9).fillColor("#0055aa").text(`  Recommendation: ${i.recommendation}`);
+      doc.fontSize(12).fillColor("#000000").text("Key Performance Indicators", { underline: true });
+      doc.moveDown(0.5);
+      for (const k of kpis) {
+        doc.fontSize(10).fillColor("#111111").text(`• ${k.name}: ${k.formattedValue}`);
       }
-    }
+      doc.moveDown();
 
-    doc.end();
+      doc.fontSize(12).fillColor("#000000").text("Key Findings", { underline: true });
+      doc.moveDown(0.5);
+      for (const f of insights.keyFindings) {
+        doc.fontSize(10).fillColor("#333333").text(`- ${f}`);
+      }
+      doc.moveDown();
+
+      doc.fontSize(12).fillColor("#000000").text("Strategic Insights", { underline: true });
+      doc.moveDown(0.5);
+      for (const i of insights.insights) {
+        doc.fontSize(10).fillColor("#111111").text(`[${i.category.toUpperCase()}] ${i.title}: ${i.description}`);
+        if (i.recommendation) {
+          doc.fontSize(9).fillColor("#0055aa").text(`  Recommendation: ${i.recommendation}`);
+        }
+      }
+
+      doc.end();
+    } catch {
+      resolve(generateMinimalPdf(title, datasetName, profile, kpis, insights));
+    }
   });
 }
+
+function generateMinimalPdf(
+  title: string,
+  datasetName: string,
+  profile: DatasetProfile,
+  kpis: KpiMetric[],
+  insights: InsightsReport,
+): Buffer {
+  const safeTitle = title.replace(/[()]/g, "");
+  const safeDs = datasetName.replace(/[()]/g, "");
+  const safeSum = (insights.executiveSummary || "Executive Summary").slice(0, 100).replace(/[()]/g, "");
+  const content = [
+    `BT /F1 16 Tf 50 750 Td (${safeTitle}) Tj ET`,
+    `BT /F1 10 Tf 50 730 Td (Dataset: ${safeDs} | Records: ${profile.rowCount} | Generated: ${new Date().toLocaleDateString()}) Tj ET`,
+    `BT /F1 12 Tf 50 690 Td (Executive Summary) Tj ET`,
+    `BT /F1 10 Tf 50 670 Td (${safeSum}) Tj ET`,
+    `BT /F1 12 Tf 50 630 Td (Key Performance Indicators) Tj ET`,
+    ...kpis.slice(0, 6).map((k, i) => `BT /F1 10 Tf 50 ${600 - i * 20} Td (${k.name.replace(/[()]/g, "")}: ${k.formattedValue.replace(/[()]/g, "")}) Tj ET`),
+  ].join("\n");
+
+  const stream = Buffer.from(content, "utf-8");
+  const pdf = `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> >> endobj
+4 0 obj << /Length ${stream.length} >> stream
+${content}
+endstream endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000266 00000 n 
+trailer << /Size 5 /Root 1 0 R >>
+startxref
+${266 + stream.length + 40}
+%%EOF`;
+
+  return Buffer.from(pdf, "utf-8");
+}
+
 

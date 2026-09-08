@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     // Type-safety is enforced via `npm run typecheck` in CI; lint runs separately.
     ignoreDuringBuilds: false,
   },
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/pdfkit/**/*"],
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts", "date-fns", "three"],
   },
