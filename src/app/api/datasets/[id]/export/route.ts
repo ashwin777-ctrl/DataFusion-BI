@@ -42,7 +42,7 @@ export async function POST(
         return await exportToCsv(conn, parquetPath, filterSql);
       });
 
-      return new NextResponse(csvBuffer, {
+      return new NextResponse(new Uint8Array(csvBuffer), {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="${dataset.name.replace(/[^a-z0-9_]/gi, "_")}.csv"`,
@@ -57,7 +57,7 @@ export async function POST(
         return await exportToExcel(conn, parquetPath, profile, kpis, `${dataset.name} Report`);
       });
 
-      return new NextResponse(excelBuffer, {
+      return new NextResponse(new Uint8Array(excelBuffer), {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "Content-Disposition": `attachment; filename="${dataset.name.replace(/[^a-z0-9_]/gi, "_")}.xlsx"`,
@@ -79,7 +79,7 @@ export async function POST(
         );
       });
 
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${dataset.name.replace(/[^a-z0-9_]/gi, "_")}.pdf"`,
