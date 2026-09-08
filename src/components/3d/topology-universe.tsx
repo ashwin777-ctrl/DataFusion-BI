@@ -34,14 +34,6 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) {
-      setWebglSupported(false);
-      return;
-    }
-    setWebglSupported(true);
-
     if (!containerRef.current) return;
     const container = containerRef.current;
 
@@ -49,11 +41,19 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 3, 11);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "default",
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+      setWebglSupported(true);
+    } catch {
+      setWebglSupported(false);
+      return;
+    }
+
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     container.appendChild(renderer.domElement);
@@ -127,16 +127,24 @@ export function TopologyUniverse({ nodes = DEFAULT_NODES, className = "", onSele
     const mouse = new THREE.Vector2(-999, -999);
     const targetMeshes = meshMap.map((m) => m.mesh);
 
+    let raycastScheduled = false;
     const onMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(targetMeshes);
-      const nextCursor = hits.length > 0 ? "pointer" : "default";
-      if (container.style.cursor !== nextCursor) {
-        container.style.cursor = nextCursor;
+      if (!raycastScheduled) {
+        raycastScheduled = true;
+        requestAnimationFrame(() => {
+          raycastScheduled = false;
+          if (!container) return;
+          raycaster.setFromCamera(mouse, camera);
+          const hits = raycaster.intersectObjects(targetMeshes);
+          const nextCursor = hits.length > 0 ? "pointer" : "default";
+          if (container.style.cursor !== nextCursor) {
+            container.style.cursor = nextCursor;
+          }
+        });
       }
     };
 

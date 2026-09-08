@@ -18,15 +18,6 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check WebGL availability
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) {
-      setWebglSupported(false);
-      return;
-    }
-    setWebglSupported(true);
-
     if (!containerRef.current) return;
     const container = containerRef.current;
 
@@ -37,11 +28,19 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 1.2, 14);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "default",
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+      setWebglSupported(true);
+    } catch {
+      setWebglSupported(false);
+      return;
+    }
+
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -194,6 +193,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     let targetCameraY = 1.2;
     let currentHoveredLabel: string | null = null;
 
+    let raycastScheduled = false;
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -201,6 +201,30 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
 
       targetCameraX = mouse.x * 1.2;
       targetCameraY = 1.2 + mouse.y * 0.8;
+
+      if (!raycastScheduled) {
+        raycastScheduled = true;
+        requestAnimationFrame(() => {
+          raycastScheduled = false;
+          if (!container) return;
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(nodeMeshes);
+          if (intersects.length > 0 && intersects[0]) {
+            const label = intersects[0].object.userData.label;
+            if (currentHoveredLabel !== label) {
+              currentHoveredLabel = label;
+              setHoveredNode(label);
+            }
+            container.style.cursor = "pointer";
+          } else {
+            if (currentHoveredLabel !== null) {
+              currentHoveredLabel = null;
+              setHoveredNode(null);
+            }
+            container.style.cursor = "default";
+          }
+        });
+      }
     };
 
     const handleClick = () => {
@@ -298,24 +322,6 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
           }
         }
         posAttr.needsUpdate = true;
-      }
-
-      // Check hover (only trigger React state update when value actually changes)
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(nodeMeshes);
-      if (intersects.length > 0 && intersects[0]) {
-        const label = intersects[0].object.userData.label;
-        if (currentHoveredLabel !== label) {
-          currentHoveredLabel = label;
-          setHoveredNode(label);
-        }
-        container.style.cursor = "pointer";
-      } else {
-        if (currentHoveredLabel !== null) {
-          currentHoveredLabel = null;
-          setHoveredNode(null);
-        }
-        container.style.cursor = "default";
       }
 
       renderer.render(scene, camera);

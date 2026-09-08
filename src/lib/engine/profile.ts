@@ -109,74 +109,79 @@ export async function profileParquetFile(
   let totalNullCells = 0;
   const totalCells = totalRows * schemaRes.length;
 
-  for (const col of schemaRes) {
+  // 4. Batch all column statistics into a single multi-column aggregation query
+  const statsExpressions: string[] = [];
+  schemaRes.forEach((col, idx) => {
     const colName = col.column_name;
     const rawType = col.column_type.toLowerCase();
     const escapedCol = `"${colName.replace(/"/g, '""')}"`;
+    const isNum =
+      rawType.includes("int") ||
+      rawType.includes("float") ||
+      rawType.includes("double") ||
+      rawType.includes("decimal") ||
+      rawType.includes("numeric");
 
-    // Distinct & null stats
-    const statsRes = await queryDuckDB<{
-      distinct_count: number;
-      null_count: number;
-      min_val: any;
-      max_val: any;
-      avg_val: any;
-      sum_val: any;
-      std_val: any;
-    }>(
-      conn,
-      `SELECT
-        COUNT(DISTINCT ${escapedCol}) as distinct_count,
-        COUNT(*) - COUNT(${escapedCol}) as null_count,
-        MIN(${escapedCol}) as min_val,
-        MAX(${escapedCol}) as max_val,
-        ${
-          rawType.includes("int") ||
-          rawType.includes("float") ||
-          rawType.includes("double") ||
-          rawType.includes("decimal") ||
-          rawType.includes("numeric")
-            ? `AVG(${escapedCol}) as avg_val, SUM(${escapedCol}) as sum_val, STDDEV(${escapedCol}) as std_val`
-            : "NULL as avg_val, NULL as sum_val, NULL as std_val"
-        }
-      FROM read_parquet('${normPath}')`,
+    statsExpressions.push(
+      `COUNT(DISTINCT ${escapedCol}) as distinct_${idx}`,
+      `COUNT(*) - COUNT(${escapedCol}) as null_${idx}`,
+      `MIN(${escapedCol}) as min_${idx}`,
+      `MAX(${escapedCol}) as max_${idx}`,
+      isNum ? `AVG(${escapedCol}) as avg_${idx}` : `NULL as avg_${idx}`,
+      isNum ? `SUM(${escapedCol}) as sum_${idx}` : `NULL as sum_${idx}`,
+      isNum ? `STDDEV(${escapedCol}) as std_${idx}` : `NULL as std_${idx}`
     );
+  });
 
-    const stats = statsRes[0] || {
-      distinct_count: 0,
-      null_count: 0,
-      min_val: null,
-      max_val: null,
-      avg_val: null,
-      sum_val: null,
-      std_val: null,
-    };
+  let batchedStats: Record<string, any> = {};
+  if (statsExpressions.length > 0) {
+    try {
+      const batchedRes = await queryDuckDB<Record<string, any>>(
+        conn,
+        `SELECT ${statsExpressions.join(",\n")} FROM read_parquet('${normPath}')`
+      );
+      batchedStats = batchedRes[0] || {};
+    } catch (e) {
+      console.error("Batched stats query error:", e);
+    }
+  }
 
-    const distinctCount = Number(stats.distinct_count ?? 0);
-    const nullCount = Number(stats.null_count ?? 0);
+  for (let idx = 0; idx < schemaRes.length; idx++) {
+    const col = schemaRes[idx]!;
+    const colName = col.column_name;
+    const rawType = col.column_type.toLowerCase();
+
+    const distinctCount = Number(batchedStats[`distinct_${idx}`] ?? 0);
+    const nullCount = Number(batchedStats[`null_${idx}`] ?? 0);
     const nullPercentage = totalRows > 0 ? (nullCount / totalRows) * 100 : 0;
     totalNullCells += nullCount;
 
-    // Top frequent values
-    let topValues: Array<{ value: any; count: number; percentage: number }> = [];
-    try {
-      const topRes = await queryDuckDB<{ val: any; cnt: number }>(
-        conn,
-        `SELECT ${escapedCol} as val, COUNT(*) as cnt
-         FROM read_parquet('${normPath}')
-         WHERE ${escapedCol} IS NOT NULL
-         GROUP BY ${escapedCol}
-         ORDER BY cnt DESC
-         LIMIT 6`,
-      );
-      topValues = topRes.map((r) => ({
-        value: r.val,
-        count: Number(r.cnt),
-        percentage: totalRows > 0 ? (Number(r.cnt) / totalRows) * 100 : 0,
-      }));
-    } catch {
-      topValues = [];
+    // Top frequent values calculated in-memory from sampleRows (instant, 0 DuckDB query overhead)
+    const freqMap = new Map<any, number>();
+    for (const r of sampleRows) {
+      const v = r[colName];
+      if (v !== null && v !== undefined) {
+        freqMap.set(v, (freqMap.get(v) || 0) + 1);
+      }
     }
+    const topValues: Array<{ value: any; count: number; percentage: number }> = Array.from(freqMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([val, cnt]) => ({
+        value: val,
+        count: cnt,
+        percentage: sampleRows.length > 0 ? (cnt / sampleRows.length) * 100 : 0,
+      }));
+
+    const stats = {
+      distinct_count: distinctCount,
+      null_count: nullCount,
+      min_val: batchedStats[`min_${idx}`] ?? null,
+      max_val: batchedStats[`max_${idx}`] ?? null,
+      avg_val: batchedStats[`avg_${idx}`] ?? null,
+      sum_val: batchedStats[`sum_${idx}`] ?? null,
+      std_val: batchedStats[`std_${idx}`] ?? null,
+    };
 
     const samples = sampleRows
       .map((r) => r[colName])

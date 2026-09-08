@@ -49,7 +49,7 @@ export async function generateDatasetInsights(
   conn: DuckDBConnection,
   parquetPath: string,
   profile: DatasetProfile,
-  _kpis: KpiMetric[],
+  _kpis?: KpiMetric[],
 ): Promise<InsightsReport> {
   const normPath = parquetPath.replace(/\\/g, "/");
   let fileMtimeMs = 0;

@@ -4,7 +4,6 @@ import { withOrg, schema } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { withDuckDB, resolveDatasetParquetPath, ensureStorageBlob } from "@/lib/engine/duckdb";
 import { profileParquetFile } from "@/lib/engine/profile";
-import { computeDatasetKpis } from "@/lib/engine/kpi-engine";
 import { generateDatasetInsights, getCachedInsights } from "@/lib/engine/insights";
 
 export const dynamic = "force-dynamic";
@@ -45,8 +44,7 @@ export async function GET(
 
     const report = await withDuckDB(async (conn) => {
       const profile = await profileParquetFile(conn, parquetPath);
-      const kpis = await computeDatasetKpis(conn, parquetPath, profile.columns);
-      return await generateDatasetInsights(conn, parquetPath, profile, kpis);
+      return await generateDatasetInsights(conn, parquetPath, profile);
     });
 
     return NextResponse.json(report, {

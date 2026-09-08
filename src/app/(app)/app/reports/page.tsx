@@ -49,7 +49,7 @@ export default function ReportsPage() {
         const res = await fetch(`/api/datasets/${activeDatasetId}/export`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ format: "pdf" }),
+          body: JSON.stringify({ format: "html" }),
         });
 
         if (res.ok) {

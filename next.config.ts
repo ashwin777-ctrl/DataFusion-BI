@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
     "@node-rs/argon2",
     "exceljs",
     "pg",
+    "pdfkit",
   ],
   eslint: {
     // Type-safety is enforced via `npm run typecheck` in CI; lint runs separately.

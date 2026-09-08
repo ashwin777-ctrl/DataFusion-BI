@@ -121,66 +121,87 @@ export async function computeDatasetKpis(
     });
   }
 
+  const whereClause = options.filterSql ? `WHERE ${options.filterSql}` : "";
+
+  // 1. Single Batched Query for All Current Values
+  const selectExprs = kpiDefinitions
+    .map((def, idx) => {
+      const expr =
+        def.agg === "count"
+          ? "COUNT(*)"
+          : def.agg === "count_distinct"
+            ? `COUNT(DISTINCT "${def.col.replace(/"/g, '""')}")`
+            : `${def.agg.toUpperCase()}("${def.col.replace(/"/g, '""')}")`;
+      return `${expr} as kpi_${idx}`;
+    })
+    .join(", ");
+
+  const curSql = `
+    SELECT ${selectExprs} 
+    FROM read_parquet('${normPath}') 
+    ${whereClause}
+  `;
+
+  let curRow: Record<string, any> = {};
+  try {
+    const curRes = await queryDuckDB<Record<string, any>>(conn, curSql);
+    curRow = curRes[0] || {};
+  } catch (err) {
+    console.error("Batched KPI query error:", err);
+  }
+
+  // 2. Single Batched Query for All Sparklines (if temporal column exists)
+  let sparkRows: Array<Record<string, any>> = [];
+  if (temporalCol) {
+    try {
+      const sparkSql = `
+        SELECT 
+          strftime(TRY_CAST("${temporalCol}" AS TIMESTAMP), '%Y-%m') as period,
+          ${selectExprs}
+        FROM read_parquet('${normPath}')
+        WHERE "${temporalCol}" IS NOT NULL ${options.filterSql ? `AND (${options.filterSql})` : ""}
+        GROUP BY period
+        ORDER BY period ASC
+        LIMIT 12;
+      `;
+      sparkRows = await queryDuckDB<Record<string, any>>(conn, sparkSql);
+    } catch {
+      sparkRows = [];
+    }
+  }
+
+  // 3. Assemble KPI Metrics
   const results: KpiMetric[] = [];
-
-  for (const def of kpiDefinitions) {
-    const expr =
-      def.agg === "count"
-        ? "COUNT(*)"
-        : def.agg === "count_distinct"
-          ? `COUNT(DISTINCT "${def.col.replace(/"/g, '""')}")`
-          : `${def.agg.toUpperCase()}("${def.col.replace(/"/g, '""')}")`;
-
-    const whereClause = options.filterSql ? `WHERE ${options.filterSql}` : "";
-
-    // Current value
-    const curSql = `
-      SELECT ${expr} as val 
-      FROM read_parquet('${normPath}') 
-      ${whereClause}
-    `;
-
-    const curRes = await queryDuckDB<{ val: any }>(conn, curSql);
-    const rawVal = Number(curRes[0]?.val ?? 0);
+  for (let idx = 0; idx < kpiDefinitions.length; idx++) {
+    const def = kpiDefinitions[idx]!;
+    const rawVal = Number(curRow[`kpi_${idx}`] ?? 0);
     const value = isNaN(rawVal) ? 0 : Number(rawVal.toFixed(2));
 
-    // Sparkline & MoM growth if temporal column exists
     let sparkline: number[] = [];
     let previousPeriodValue: number | null = null;
     let percentageChange: number | null = null;
     let trendDirection: "up" | "down" | "flat" = "flat";
     let isPositiveChange = true;
 
-    if (temporalCol) {
-      try {
-        const sparkSql = `
-          SELECT 
-            strftime(TRY_CAST("${temporalCol}" AS TIMESTAMP), '%Y-%m') as period,
-            ${expr} as val
-          FROM read_parquet('${normPath}')
-          WHERE "${temporalCol}" IS NOT NULL ${options.filterSql ? `AND (${options.filterSql})` : ""}
-          GROUP BY period
-          ORDER BY period ASC
-          LIMIT 12;
-        `;
-        const sparkRes = await queryDuckDB<{ period: string; val: any }>(conn, sparkSql);
-        sparkline = sparkRes.map((r) => Number(Number(r.val ?? 0).toFixed(2)));
+    if (sparkRows.length > 0) {
+      sparkline = sparkRows.map((r) => {
+        const v = Number(r[`kpi_${idx}`] ?? 0);
+        return isNaN(v) ? 0 : Number(v.toFixed(2));
+      });
 
-        if (sparkline.length >= 2) {
-          const latest = sparkline[sparkline.length - 1] ?? 0;
-          const previous = sparkline[sparkline.length - 2] ?? 0;
-          previousPeriodValue = previous;
+      if (sparkline.length >= 2) {
+        const latest = sparkline[sparkline.length - 1] ?? 0;
+        const previous = sparkline[sparkline.length - 2] ?? 0;
+        previousPeriodValue = previous;
 
-          if (previous !== 0) {
-            percentageChange = Number((((latest - previous) / Math.abs(previous)) * 100).toFixed(1));
-            trendDirection = percentageChange > 0.5 ? "up" : percentageChange < -0.5 ? "down" : "flat";
-            isPositiveChange = def.name.toLowerCase().includes("cost") || def.name.toLowerCase().includes("expense")
+        if (previous !== 0) {
+          percentageChange = Number((((latest - previous) / Math.abs(previous)) * 100).toFixed(1));
+          trendDirection = percentageChange > 0.5 ? "up" : percentageChange < -0.5 ? "down" : "flat";
+          isPositiveChange =
+            def.name.toLowerCase().includes("cost") || def.name.toLowerCase().includes("expense")
               ? percentageChange <= 0
               : percentageChange >= 0;
-          }
         }
-      } catch {
-        sparkline = [value, value, value];
       }
     }
 
