@@ -64,37 +64,37 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black transition-colors duration-300">
+    <div className="min-h-screen bg-plane text-foreground selection:bg-blue-600 selection:text-white transition-colors duration-300">
       {/* 1. Header Navigation */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-2xl">
+      <header className="sticky top-0 z-50 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-black/75 backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-black font-black text-sm shadow-md">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 dark:bg-blue-500 text-white font-bold text-sm shadow-[0_2px_6px_rgba(0,113,227,0.35)]">
                 DF
               </span>
-              <span className="font-display font-extrabold tracking-tight text-base sm:text-lg text-white">
-                DataFusion<span className="text-zinc-400">BI</span>
+              <span className="font-display font-bold tracking-tight text-base sm:text-lg text-foreground">
+                DataFusion<span className="text-blue-600 dark:text-blue-400">BI</span>
               </span>
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400">
-            <a href="#overview" className="transition-colors hover:text-white">Project Overview</a>
-            <a href="#architecture" className="transition-colors hover:text-white">Architecture</a>
-            <a href="#signin" className="transition-colors hover:text-white">Sign In</a>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <a href="#overview" className="transition-colors hover:text-foreground">Project Overview</a>
+            <a href="#architecture" className="transition-colors hover:text-foreground">Architecture</a>
+            <a href="#signin" className="transition-colors hover:text-foreground">Sign In</a>
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
             <ThemeSwitcher />
             <a href="#signin" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="sm" className="text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="sm" className="text-xs font-medium text-secondary-foreground hover:text-foreground rounded-full">
                 Sign In
               </Button>
             </a>
             <Link href="/login">
-              <Button size="sm" className="gap-1.5 text-xs font-bold bg-white text-black hover:bg-zinc-200 shadow-md px-2.5 sm:px-3">
-                <span className="hidden sm:inline">Open Login Portal</span>
+              <Button size="sm" className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_2px_8px_rgba(0,113,227,0.35)] px-3.5 sm:px-4">
+                <span className="hidden sm:inline">Open Portal</span>
                 <span className="sm:hidden">Login</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -105,78 +105,78 @@ export default function LandingPage() {
 
       <main>
         {/* 2. PROJECT HERO SECTION WITH 3D DATA CORE */}
-        <section id="overview" className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-24 border-b border-white/10">
+        <section id="overview" className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-24 border-b border-black/[0.06] dark:border-white/[0.08]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
               
               {/* Left Column: Project Mission & Architectural Guarantees */}
               <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 backdrop-blur shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono">
-                    Production Enterprise BI Platform
+                <div className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] dark:border-white/[0.12] bg-black/[0.03] dark:bg-white/[0.05] px-3.5 py-1.5 backdrop-blur shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground font-mono">
+                    Next-Gen Enterprise BI
                   </span>
                 </div>
 
-                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl font-display leading-[1.08] text-white">
+                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl leading-[1.08] text-foreground">
                   Intelligent Analytics. <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-300">
                     Vectorized & Spatial.
                   </span>
                 </h1>
 
-                <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-xl">
+                <p className="text-base sm:text-lg text-secondary-foreground leading-relaxed max-w-xl">
                   DataFusion BI is a high-performance business intelligence suite uniting in-process 
-                  <strong className="text-white"> DuckDB OLAP</strong>, real-time <strong className="text-white">PostgreSQL 16</strong> multi-tenant isolation, interactive <strong className="text-white">3D schema topologies</strong>, and autonomous statistical diagnostics.
+                  <strong className="text-foreground"> DuckDB OLAP</strong>, real-time <strong className="text-foreground">PostgreSQL 16</strong> multi-tenant isolation, interactive <strong className="text-foreground">3D schema topologies</strong>, and autonomous statistical diagnostics.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <a href="#signin">
-                    <Button size="md" className="h-11 px-6 gap-2 font-bold bg-white text-black hover:bg-zinc-200 shadow-xl">
+                    <Button size="md" className="h-11 px-6 gap-2 font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_4px_14px_rgba(0,113,227,0.35)]">
                       <span>Sign In to Workspace</span>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </a>
 
                   <Link href="/login">
-                    <Button variant="outline" size="md" className="h-11 px-5 gap-2 font-semibold border-white/20 text-white hover:bg-white/10 bg-transparent">
-                      <Terminal className="h-4 w-4 text-zinc-300" />
-                      <span>Dedicated Login Page</span>
+                    <Button variant="secondary" size="md" className="h-11 px-5 gap-2 font-medium rounded-full">
+                      <Terminal className="h-4 w-4 text-muted-foreground" />
+                      <span>Dedicated Login</span>
                     </Button>
                   </Link>
 
-                  <a href="#architecture" className="text-xs font-mono text-zinc-400 hover:text-white px-2 py-2 flex items-center gap-1 transition-colors">
+                  <a href="#architecture" className="text-xs font-mono text-muted-foreground hover:text-foreground px-2 py-2 flex items-center gap-1 transition-colors">
                     <span>Explore System Specs</span>
                     <ChevronRight className="h-3 w-3" />
                   </a>
                 </div>
 
                 {/* Key Architectural Guarantees Strip */}
-                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
-                  <div className="p-3 rounded-xl bg-[#0a0a0a] border border-white/10">
-                    <div className="text-xl sm:text-2xl font-black font-display text-white">
-                      &lt;2<span className="text-zinc-400 text-sm font-mono">ms</span>
+                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-black/[0.06] dark:border-white/[0.08]">
+                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                      &lt;2<span className="text-muted-foreground text-sm font-mono">ms</span>
                     </div>
-                    <div className="text-xs text-zinc-400 font-medium">In-Process OLAP</div>
+                    <div className="text-xs text-muted-foreground font-medium mt-0.5">In-Process OLAP</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0a0a0a] border border-white/10">
-                    <div className="text-xl sm:text-2xl font-black font-display text-white">
-                      100<span className="text-zinc-400 text-sm font-mono">%</span>
+                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                      100<span className="text-muted-foreground text-sm font-mono">%</span>
                     </div>
-                    <div className="text-xs text-zinc-400 font-medium">Postgres 16 RLS</div>
+                    <div className="text-xs text-muted-foreground font-medium mt-0.5">Postgres 16 RLS</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0a0a0a] border border-white/10">
-                    <div className="text-xl sm:text-2xl font-black font-display text-white">
-                      Zero<span className="text-zinc-400 text-sm font-mono">Copy</span>
+                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                      Zero<span className="text-muted-foreground text-sm font-mono">Copy</span>
                     </div>
-                    <div className="text-xs text-zinc-400 font-medium">Arrow / Parquet</div>
+                    <div className="text-xs text-muted-foreground font-medium mt-0.5">Arrow / Parquet</div>
                   </div>
                 </div>
               </div>
 
               {/* Right Column: Interactive 3D Spatial Intelligence Core */}
               <div className="lg:col-span-6">
-                <div className="relative mx-auto h-[440px] sm:h-[500px] w-full max-w-[560px] rounded-3xl border border-white/15 bg-[#0a0a0a]/90 p-2 shadow-2xl backdrop-blur-2xl overflow-hidden">
+                <div className="relative mx-auto h-[440px] sm:h-[500px] w-full max-w-[560px] rounded-3xl border border-white/15 bg-[#0a0a0a] p-2 shadow-2xl overflow-hidden">
                   <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-[11px] font-mono text-zinc-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>THREE.JS DATA CORE (SPATIAL 3D)</span>

@@ -61,7 +61,7 @@ export function StitchSqlProfiler() {
     : SAMPLE_QUERIES;
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div>
@@ -81,7 +81,7 @@ export function StitchSqlProfiler() {
         <button
           type="button"
           onClick={() => setFilterMin100(!filterMin100)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-medium transition-colors duration-150 ${
             filterMin100
               ? "bg-white text-black font-semibold shadow-md"
               : "bg-[#050505] text-zinc-400 border border-white/10 hover:text-white"

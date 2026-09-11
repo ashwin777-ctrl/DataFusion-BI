@@ -45,7 +45,7 @@ export function StitchConnectorsMonitor({ onOpenTopology }: StitchConnectorsMoni
   ];
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-white/10">
         <div>
@@ -71,7 +71,7 @@ export function StitchConnectorsMonitor({ onOpenTopology }: StitchConnectorsMoni
           return (
             <div
               key={c.name}
-              className="p-3 bg-[#050505] hover:bg-[#111111] border border-white/10 rounded-lg flex items-center justify-between transition-all"
+              className="p-3 bg-[#050505] hover:bg-[#111111] border border-white/10 rounded-lg flex items-center justify-between transition-colors duration-150"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-black border border-white/10 flex items-center justify-center text-white">

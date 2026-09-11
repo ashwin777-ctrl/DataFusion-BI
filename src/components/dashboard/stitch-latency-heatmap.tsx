@@ -13,7 +13,7 @@ export function StitchLatencyHeatmap() {
   ];
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-white/10">
         <div>
@@ -50,7 +50,7 @@ export function StitchLatencyHeatmap() {
                   key={i}
                   className={`h-3 flex-1 rounded-sm ${
                     i < b.count ? b.color : "bg-zinc-900 border border-white/5"
-                  } transition-all`}
+                  }`}
                 />
               ))}
             </div>

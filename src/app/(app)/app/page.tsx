@@ -59,14 +59,14 @@ import {
 } from "recharts";
 
 const CHART_COLORS = [
-  "#2a78d6", // Primary Blue
-  "#eb6834", // Coral Orange
-  "#1baf7a", // Teal Green
-  "#eda100", // Amber Yellow
-  "#e87ba4", // Rose Pink
-  "#008300", // Emerald
-  "#4a3aa7", // Indigo
-  "#e34948", // Crimson
+  "#0071e3", // Apple Blue
+  "#34c759", // Apple Green
+  "#af52de", // Apple Purple
+  "#ff9500", // Apple Orange
+  "#5856d6", // Apple Indigo
+  "#00c7be", // Apple Teal
+  "#ff2d55", // Apple Rose
+  "#64d2ff", // Apple Cyan
 ];
 
 export default function DashboardPage() {
@@ -346,15 +346,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Stitch 3-Way Perspective Switcher */}
-          <div className="flex items-center rounded-lg border border-cyan-500/30 bg-[#060e20] p-1 text-xs shadow-md">
+          {/* Apple Segmented Capsule Switcher */}
+          <div className="flex items-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.04] dark:bg-white/[0.06] p-1 text-xs shadow-inner">
             <button
               type="button"
               onClick={() => setViewMode("overview")}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+              className={`px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
                 viewMode === "overview"
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Executive Overview
@@ -362,10 +362,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setViewMode("fabric")}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+              className={`px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
                 viewMode === "fabric"
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Data Fabric Mesh
@@ -373,10 +373,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setViewMode("3d")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
                 viewMode === "3d"
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
@@ -385,22 +385,22 @@ export default function DashboardPage() {
           </div>
 
           <Link href="/app/insights">
-            <Button variant="outline" size="sm" className="gap-1.5 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
-              <Sparkles className="h-4 w-4 text-cyan-400" />
+            <Button variant="secondary" size="sm" className="gap-1.5 rounded-full text-xs">
+              <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
               AI Insights
             </Button>
           </Link>
 
           <Link href="/app/reports">
-            <Button variant="outline" size="sm" className="gap-1.5 text-slate-300 border-slate-700 hover:bg-slate-800">
-              <Download className="h-4 w-4" />
-              Export Pack
+            <Button variant="secondary" size="sm" className="gap-1.5 rounded-full text-xs">
+              <Download className="h-3.5 w-3.5 text-muted-foreground" />
+              Export
             </Button>
           </Link>
 
           <Link href="/app/sources">
-            <Button size="sm" className="gap-1.5 bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold">
-              <Plus className="h-4 w-4" />
+            <Button variant="primary" size="sm" className="gap-1.5 rounded-full text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-[0_2px_8px_rgba(0,113,227,0.3)]">
+              <Plus className="h-3.5 w-3.5" />
               Add Source
             </Button>
           </Link>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
       )}
 
       {/* Interactive Analytical Visual Builder */}
-      <div className="stitch-card p-6 space-y-6 shadow-2xl backdrop-blur-xl">
+      <div className="stitch-card p-6 space-y-6 shadow-lg">
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <div className="flex flex-wrap items-center gap-2">

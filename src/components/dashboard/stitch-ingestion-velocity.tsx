@@ -35,7 +35,7 @@ export function StitchIngestionVelocity() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between overflow-hidden">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
         <div>
@@ -63,7 +63,7 @@ export function StitchIngestionVelocity() {
         <button
           type="button"
           onClick={() => toggleSeries("kafka")}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors duration-150 ${
             activeSeries.kafka
               ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
               : "bg-slate-900/60 text-slate-500 border border-slate-800"
@@ -76,7 +76,7 @@ export function StitchIngestionVelocity() {
         <button
           type="button"
           onClick={() => toggleSeries("snowflake")}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors duration-150 ${
             activeSeries.snowflake
               ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
               : "bg-slate-900/60 text-slate-500 border border-slate-800"
@@ -89,7 +89,7 @@ export function StitchIngestionVelocity() {
         <button
           type="button"
           onClick={() => toggleSeries("postgres")}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors duration-150 ${
             activeSeries.postgres
               ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
               : "bg-slate-900/60 text-slate-500 border border-slate-800"

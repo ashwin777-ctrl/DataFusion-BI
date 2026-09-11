@@ -17,6 +17,20 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const particleMatRef = useRef<THREE.PointsMaterial | null>(null);
+
+  // Smooth 0-cost theme updates without tearing down WebGL context or recompiling shaders
+  useEffect(() => {
+    const isDark = resolvedTheme === "dark";
+    if (ambientLightRef.current) {
+      ambientLightRef.current.intensity = isDark ? 0.6 : 0.9;
+    }
+    if (particleMatRef.current) {
+      particleMatRef.current.color.setHex(isDark ? 0x00f0ff : 0x2563eb);
+    }
+  }, [resolvedTheme]);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
@@ -50,6 +64,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     // --- 2. Lighting ---
     const ambientLight = new THREE.AmbientLight(0xffffff, resolvedTheme === "dark" ? 0.6 : 0.9);
     scene.add(ambientLight);
+    ambientLightRef.current = ambientLight;
 
     const keyLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
     keyLight.position.set(10, 12, 10);
@@ -180,6 +195,7 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
       opacity: 0.75,
       blending: THREE.AdditiveBlending,
     });
+    particleMatRef.current = particleMat;
     const particleSystem = new THREE.Points(particleGeo, particleMat);
     scene.add(particleSystem);
 
@@ -250,28 +266,16 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
     };
     window.addEventListener("resize", handleResize);
 
-    // Pause animation when scrolled off-screen or tab is hidden
-    let isVisible = true;
-    const observer = new IntersectionObserver(([entry]) => {
-      isVisible = Boolean(entry?.isIntersecting);
-    }, { threshold: 0.05 });
-    observer.observe(container);
+    // Completely halt rAF loop when offscreen or tab is hidden
+    let isVisible = false;
+    let animId: number | null = null;
 
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        isVisible = false;
-      } else if (container) {
-        const rect = container.getBoundingClientRect();
-        isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    // --- 7. Animation Loop ---
-    let animId: number;
     const animate = () => {
+      if (!isVisible) {
+        animId = null;
+        return;
+      }
       animId = requestAnimationFrame(animate);
-      if (!isVisible) return;
 
       if (!reducedMotion) {
         // Gentle rotation of core
@@ -327,10 +331,47 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
       renderer.render(scene, camera);
     };
 
-    animate();
+    const startAnimate = () => {
+      if (!animId && isVisible) {
+        animId = requestAnimationFrame(animate);
+      }
+    };
+
+    const stopAnimate = () => {
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+    };
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting);
+      if (isVisible) {
+        startAnimate();
+      } else {
+        stopAnimate();
+      }
+    }, { threshold: 0.05 });
+    observer.observe(container);
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        isVisible = false;
+        stopAnimate();
+      } else if (container) {
+        const rect = container.getBoundingClientRect();
+        isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isVisible) {
+          startAnimate();
+        } else {
+          stopAnimate();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
-      cancelAnimationFrame(animId);
+      stopAnimate();
       observer.disconnect();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("resize", handleResize);
@@ -358,7 +399,8 @@ export function HeroDataCore({ onNodeClick, className = "" }: HeroDataCoreProps)
         container.removeChild(renderer.domElement);
       }
     };
-  }, [resolvedTheme]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Theme changes are applied smoothly in separate effect to prevent WebGL scene re-creation
+  }, []);
 
   if (webglSupported === false) {
     return (

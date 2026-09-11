@@ -54,7 +54,7 @@ export function StitchAutonomousInsights() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-white/10">
         <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export function StitchAutonomousInsights() {
           insights.map((ins) => (
             <div
               key={ins.id}
-              className="p-3 bg-[#050505] hover:bg-[#111111] border border-white/10 rounded-lg transition-all space-y-2"
+              className="p-3 bg-[#050505] hover:bg-[#111111] border border-white/10 rounded-lg transition-colors duration-150 space-y-2"
             >
               <div className="flex items-center justify-between">
                 <span

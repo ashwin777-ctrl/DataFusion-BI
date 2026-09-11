@@ -77,7 +77,7 @@ export async function ingestUploadedFile(params: {
 
   if (fileKind === "xlsx" || fileKind === "xls") {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as any);
 
     let activeWorksheet: ExcelJS.Worksheet | undefined;
 

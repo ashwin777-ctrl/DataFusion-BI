@@ -10,7 +10,7 @@ export function StitchPipelineFlowMap() {
   return (
     <div className="space-y-6">
       {/* Visual Pipeline Topology Canvas */}
-      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 shadow-lg relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export function StitchPipelineFlowMap() {
       </div>
 
       {/* Autonomous Copilot Card */}
-      <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-xl">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-5 shadow-lg">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded bg-white/10 text-white border border-white/10">
