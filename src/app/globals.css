@@ -13,139 +13,150 @@
 
 @layer base {
   :root {
-    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-      Arial, sans-serif;
-    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo,
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Inter", system-ui, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, "Cascadia Code",
       monospace;
 
-    /* ---- Neutrals & surfaces (light) ---- */
-    --plane: 60 14.3% 97.3%;
-    --surface-1: 60 14.3% 98.6%;
+    /* ---- Apple Clean Surfaces (Light) ---- */
+    --plane: 240 5% 96%; /* #F5F5F7 Apple canvas */
+    --surface-1: 0 0% 100%; /* #FFFFFF pure surface */
     --surface-2: 0 0% 100%;
-    --surface-sunken: 45 13.3% 94.1%;
+    --surface-sunken: 240 4% 92%; /* #EBEBED */
 
-    --background: var(--surface-1);
-    --foreground: 0 0% 4.3%;
+    --background: var(--plane);
+    --foreground: 240 3% 12%; /* #1D1D1F */
     --card: var(--surface-1);
-    --card-foreground: 0 0% 4.3%;
+    --card-foreground: 240 3% 12%;
     --popover: var(--surface-2);
-    --popover-foreground: 0 0% 4.3%;
+    --popover-foreground: 240 3% 12%;
 
-    /* text roles */
-    --secondary-foreground: 45 2.5% 31.4%; /* #52514e — 7.7:1 */
-    --muted-foreground: 45 3.8% 41.6%; /* #6e6c66 — 5.11:1 (corrected from #898781) */
+    /* Text hierarchy */
+    --secondary-foreground: 240 2% 44%; /* #6E6E73 */
+    --muted-foreground: 240 2% 54%; /* #86868B */
 
-    /* ---- Action / interactive (light) ---- */
-    --primary: 0 0% 4.3%; /* near-black action, not a brand hue (P1) */
-    --primary-foreground: 60 14.3% 98.6%;
-    --secondary: 45 13.3% 94.1%;
-    --muted: 45 13.3% 94.1%;
-    --accent: 213 67.7% 50.2%; /* interactive blue */
+    /* ---- Action / Interactive (Light) ---- */
+    --primary: 240 3% 12%; /* #1D1D1F */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 92%;
+    --muted: 240 4% 94%;
+    --accent: 210 100% 45%; /* #0071E3 Cupertino Blue */
     --accent-foreground: 0 0% 100%;
-    --link: 216 68% 39.2%;
+    --link: 210 100% 45%;
 
-    --destructive: 0 59.1% 44.1%; /* #b32e2e — 6.27:1 on white */
+    --destructive: 0 75% 42%; /* #BA1A1A */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 53 11.8% 86.7%;
-    --border-strong: 55 9.1% 74.1%;
-    --input: 55 9.1% 74.1%;
-    --ring: 213 67.7% 50.2%;
+    --border: 240 6% 90%;
+    --border-strong: 240 5% 82%;
+    --input: 240 4% 90%;
+    --ring: 210 100% 45%;
 
-    /* ---- Status (fixed, never themed) ---- */
-    --status-good: 120 86.3% 34.3%;
-    --status-warning: 41 95.7% 53.9%;
-    --status-serious: 17 79.3% 63.9%;
-    --status-critical: 0 61.3% 52.4%;
+    /* ---- Status (Semantic) ---- */
+    --status-good: 134 61% 41%; /* #34C759 */
+    --status-warning: 35 100% 50%; /* #FF9500 */
+    --status-serious: 24 100% 50%;
+    --status-critical: 355 100% 45%; /* #FF2D55 */
 
-    /* ---- Radius / elevation ---- */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --elev-1: 0 1px 2px rgba(11, 11, 11, 0.06);
-    --elev-2: 0 8px 24px rgba(11, 11, 11, 0.12);
+    /* ---- Apple Squircle Radii & Ambient Shadows ---- */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 28px;
+    --radius-full: 9999px;
 
-    /* ---- Chart palette (validated, light) — DESIGN.md §3.4 / references/palette.md ---- */
-    --viz-surface: #fcfcfb;
-    --viz-1: #2a78d6;
-    --viz-2: #eb6834;
-    --viz-3: #1baf7a;
-    --viz-4: #eda100;
-    --viz-5: #e87ba4;
-    --viz-6: #008300;
-    --viz-7: #4a3aa7;
-    --viz-8: #e34948;
-    --viz-grid: #e1e0d9;
-    --viz-axis: #c3c2b7;
-    --viz-text: #6e6c66;
-    /* sequential blue ramp (magnitude) */
-    --viz-seq-100: #cde2fb;
-    --viz-seq-300: #6da7ec;
-    --viz-seq-500: #256abf;
-    --viz-seq-700: #0d366b;
-    /* diverging poles + neutral midpoint */
-    --viz-div-neg: #2a78d6;
-    --viz-div-mid: #f0efec;
-    --viz-div-pos: #d03b3b;
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+    --elev-2: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    --elev-3: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+    /* ---- Apple Data Viz Palette (Light) ---- */
+    --viz-surface: #ffffff;
+    --viz-1: #0071e3; /* Apple Blue */
+    --viz-2: #34c759; /* Apple Green */
+    --viz-3: #af52de; /* Apple Purple */
+    --viz-4: #ff9500; /* Apple Orange */
+    --viz-5: #5856d6; /* Apple Indigo */
+    --viz-6: #00c7be; /* Apple Teal */
+    --viz-7: #ff2d55; /* Apple Rose */
+    --viz-8: #64d2ff; /* Apple Cyan */
+    --viz-grid: #e5e5ea;
+    --viz-axis: #c7c7cc;
+    --viz-text: #8e8e93;
+
+    /* Sequential blue ramp */
+    --viz-seq-100: #d0e6ff;
+    --viz-seq-300: #7eb6ff;
+    --viz-seq-500: #0071e3;
+    --viz-seq-700: #004599;
+
+    /* Diverging poles */
+    --viz-div-neg: #0071e3;
+    --viz-div-mid: #f5f5f7;
+    --viz-div-pos: #ff2d55;
 
     color-scheme: light;
   }
 
   .dark {
-    --plane: 0 0% 0%; /* #000000 - Pure OLED Black Canvas */
-    --surface-1: 0 0% 4%; /* #0a0a0a - Pitch Carbon Base */
-    --surface-2: 0 0% 8%; /* #141414 - Container Elevated */
-    --surface-sunken: 0 0% 2%; /* #050505 - Deepest Pitch */
+    --plane: 0 0% 0%; /* #000000 True OLED Black Canvas */
+    --surface-1: 240 6% 7%; /* #101012 Elevated Carbon */
+    --surface-2: 240 8% 11%; /* #1A1A1E Higher Elevation */
+    --surface-sunken: 240 6% 4%; /* #080809 Sunken Wells */
 
     --background: 0 0% 0%; /* #000000 */
-    --foreground: 0 0% 98%; /* #fafafa - Ultra Crisp White */
-    --card: 0 0% 4%; /* #0a0a0a */
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%; /* #0f0f0f */
-    --popover-foreground: 0 0% 98%;
+    --foreground: 240 5% 96%; /* #F5F5F7 Crisp Neutral White */
+    --card: 240 6% 7%; /* #101012 */
+    --card-foreground: 240 5% 96%;
+    --popover: 240 8% 11%; /* #1A1A1E */
+    --popover-foreground: 240 5% 96%;
 
-    --secondary-foreground: 0 0% 75%; /* #bfbfbf */
-    --muted-foreground: 0 0% 55%; /* #8c8c8c */
+    --secondary-foreground: 240 2% 61%; /* #98989D */
+    --muted-foreground: 240 2% 44%; /* #6E6E73 */
 
-    --primary: 0 0% 100%; /* #ffffff - Pure Pristine White Action */
-    --primary-foreground: 0 0% 0%; /* #000000 */
-    --secondary: 0 0% 10%; /* #1a1a1a */
-    --muted: 0 0% 10%; /* #1a1a1a */
-    --accent: 0 0% 100%; /* Crisp Pure White */
-    --accent-foreground: 0 0% 0%;
-    --link: 0 0% 90%;
+    --primary: 0 0% 100%; /* #FFFFFF */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 240 6% 12%; /* #1C1C20 */
+    --muted: 240 6% 12%;
+    --accent: 211 100% 52%; /* #0A84FF Apple Dark Blue */
+    --accent-foreground: 0 0% 100%;
+    --link: 211 100% 63%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 100% 62%; /* #FF453A */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%; /* #262626 - Fine neutral carbon border */
-    --border-strong: 0 0% 25%; /* #404040 */
-    --input: 0 0% 16%;
-    --ring: 0 0% 80%;
+    --border: 240 4% 16%; /* #24242A hairline edge */
+    --border-strong: 240 4% 24%;
+    --input: 240 4% 16%;
+    --ring: 211 100% 52%;
 
     --elev-1: 0 2px 8px rgba(0, 0, 0, 0.85);
-    --elev-2: 0 12px 40px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --elev-2: 0 12px 36px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --elev-3: 0 24px 64px rgba(0, 0, 0, 0.98), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 
-    /* ---- Monochromatic OLED Chart palette ---- */
+    /* ---- Apple Data Viz Palette (Dark) ---- */
     --viz-surface: #000000;
-    --viz-1: #ffffff; /* Crisp Pure White */
-    --viz-2: #10b981; /* Emerald */
-    --viz-3: #a855f7; /* Violet */
-    --viz-4: #f59e0b; /* Amber */
-    --viz-5: #06b6d4; /* Teal */
-    --viz-6: #f43f5e; /* Rose */
-    --viz-7: #64748b; /* Slate */
-    --viz-8: #3b82f6; /* Accent Blue */
-    --viz-grid: #171717;
-    --viz-axis: #262626;
-    --viz-text: #737373;
-    --viz-seq-100: #171717;
-    --viz-seq-300: #404040;
-    --viz-seq-500: #a3a3a3;
-    --viz-seq-700: #ffffff;
-    --viz-div-neg: #71717a;
-    --viz-div-mid: #171717;
-    --viz-div-pos: #ffffff;
+    --viz-1: #0a84ff; /* Apple Dark Blue */
+    --viz-2: #30d158; /* Apple Dark Green */
+    --viz-3: #bf5af2; /* Apple Dark Purple */
+    --viz-4: #ff9f0a; /* Apple Dark Orange */
+    --viz-5: #5e5ce6; /* Apple Dark Indigo */
+    --viz-6: #66d4cf; /* Apple Dark Teal */
+    --viz-7: #ff375f; /* Apple Dark Rose */
+    --viz-8: #70d7ff; /* Apple Dark Cyan */
+    --viz-grid: #1c1c1e;
+    --viz-axis: #2c2c2e;
+    --viz-text: #8e8e93;
+
+    --viz-seq-100: #101e33;
+    --viz-seq-300: #1b4578;
+    --viz-seq-500: #0a84ff;
+    --viz-seq-700: #70baff;
+
+    --viz-div-neg: #0a84ff;
+    --viz-div-mid: #1c1c1e;
+    --viz-div-pos: #ff453a;
 
     color-scheme: dark;
   }
@@ -163,20 +174,19 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Tabular figures only where digits must align vertically (DESIGN.md §3.5) */
+  /* Tabular figures for data readouts */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
-  /* Visible focus on every focusable (DESIGN.md §10) */
+  /* Double-ring focus visible on interactive elements */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Smooth theme transitions scoped to interactive inputs rather than layout containers */
   input,
   select,
   textarea {
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
@@ -206,30 +216,64 @@
     @apply animate-shimmer;
   }
 
+  /* Apple Design System Utilities */
+  .apple-glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+  .apple-glass-subtle {
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+  }
+  .apple-card {
+    @apply relative overflow-hidden rounded-[20px] border transition-all duration-300;
+    background-color: hsl(var(--card));
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+  }
+  .apple-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
+  }
+  .dark .apple-card {
+    background-color: #101012;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .dark .apple-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
   /* Google Stitch Pure Black Glass Utilities */
   .stitch-card {
-    @apply relative overflow-hidden rounded-xl border transition-all duration-300;
+    @apply relative overflow-hidden rounded-[20px] border transition-[border-color,box-shadow,transform] duration-300;
     background-color: hsl(var(--card));
-    border-color: hsl(var(--border));
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+  }
+  .stitch-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
   }
   .dark .stitch-card {
-    background: linear-gradient(180deg, rgba(16, 16, 16, 0.96) 0%, rgba(8, 8, 8, 0.98) 100%);
-    border-color: rgba(255, 255, 255, 0.10);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
+    background: #101012;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   }
   .dark .stitch-card:hover {
-    border-color: rgba(255, 255, 255, 0.22);
-    box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
   }
 
   .stitch-header {
-    backdrop-filter: blur(24px);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
   .dark .stitch-header {
-    background: rgba(0, 0, 0, 0.88);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
+    background: rgba(16, 16, 18, 0.80);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
   }
 
   .stitch-glow-white {

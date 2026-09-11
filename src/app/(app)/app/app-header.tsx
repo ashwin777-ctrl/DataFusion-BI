@@ -46,39 +46,39 @@ export function AppHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-40 stitch-header border-b border-border bg-card/90 backdrop-blur-xl shadow-sm transition-colors">
+    <header className="sticky top-0 z-40 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#101012]/75 backdrop-blur-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-colors">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/app" className="flex items-center gap-2 text-[14px] font-bold text-foreground group">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white border border-white/20 font-black text-xs shadow-sm group-hover:scale-105 group-hover:border-white/40 transition-all">
+          <Link href="/app" className="flex items-center gap-2.5 group">
+            <span className="flex h-7.5 w-7.5 items-center justify-center rounded-[10px] bg-blue-600 dark:bg-blue-500 text-white font-bold text-xs shadow-[0_2px_6px_rgba(0,113,227,0.35)] group-hover:scale-105 transition-all">
               DF
             </span>
             <div className="hidden md:flex flex-col">
-              <span className="font-bold tracking-tight text-white leading-none">DataFusion</span>
-              <span className="text-[10px] font-mono tracking-wider text-zinc-400 font-semibold leading-none mt-0.5">
+              <span className="font-semibold text-[14px] tracking-tight text-foreground leading-none">DataFusion</span>
+              <span className="text-[10px] font-mono tracking-wider text-muted-foreground font-medium leading-none mt-1">
                 ENTERPRISE BI
               </span>
             </div>
           </Link>
-          <span className="text-zinc-700 hidden sm:inline" aria-hidden>
+          <span className="text-muted-foreground/40 hidden sm:inline" aria-hidden>
             /
           </span>
           <OrgSwitcher orgs={orgs} activeOrgId={activeOrgId} />
 
-          {/* Stitch Cluster Status Badge */}
+          {/* Live Cluster Status Pill */}
           <div className="hidden 2xl:flex items-center gap-2 pl-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               LIVE DUAL-SYNC
             </span>
-            <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-zinc-300 text-[10px] font-mono uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
               PROD-US-EAST
             </span>
           </div>
         </div>
 
         {/* Center navigation tabs */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.04] p-1 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active =
@@ -90,13 +90,13 @@ export function AppHeader({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-150 ${
                   active
-                    ? "bg-white/10 text-white border border-white/20 font-semibold shadow-sm"
-                    : "text-zinc-400 hover:bg-white/5 hover:text-white border border-transparent"
+                    ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.06]"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${active ? "text-white" : "text-zinc-400"}`} />
+                <Icon className={`h-3.5 w-3.5 ${active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -111,7 +111,7 @@ export function AppHeader({
           </span>
 
           <form action={logoutAction}>
-            <Button type="submit" variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground hover:text-destructive">
+            <Button type="submit" variant="ghost" size="sm" className="h-8 rounded-full gap-1 text-xs text-muted-foreground hover:text-destructive">
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
             </Button>
@@ -120,7 +120,7 @@ export function AppHeader({
       </div>
 
       {/* Mobile/Tablet Subnav */}
-      <div className="flex lg:hidden border-t border-border bg-card px-4 py-1.5 overflow-x-auto gap-2 w-full max-w-full">
+      <div className="flex lg:hidden border-t border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#101012]/80 backdrop-blur-lg px-4 py-1.5 overflow-x-auto gap-1.5 w-full max-w-full">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -132,10 +132,10 @@ export function AppHeader({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                 active
-                  ? "bg-accent/15 text-accent font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-blue-600 text-white font-semibold shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.06]"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
