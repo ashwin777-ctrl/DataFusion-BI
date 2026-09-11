@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
@@ -11,19 +10,14 @@ import {
   LineChart as LineChartIcon,
   PieChart as PieChartIcon,
   Layers,
-  Database,
   Download,
   Search,
   Table as TableIcon,
   AlertCircle,
   Plus,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-
-const TopologyUniverse = dynamic(
-  () => import("@/components/3d/topology-universe").then((m) => m.TopologyUniverse),
-  { ssr: false }
-);
+import { DataModelVisualizer } from "@/components/visuals/data-model-visualizer";
+import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 import { StitchHeroKpiRibbon } from "@/components/dashboard/stitch-hero-kpi-ribbon";
 import { StitchIngestionVelocity } from "@/components/dashboard/stitch-ingestion-velocity";
@@ -297,22 +291,13 @@ export default function DashboardPage() {
 
   if (datasets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-border bg-card">
-        <div className="p-4 rounded-full bg-primary/10 text-primary mb-4">
-          <Database className="h-8 w-8" />
-        </div>
-        <h2 className="text-xl font-bold text-foreground">Welcome to Confluence BI</h2>
-        <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
-          To generate your interactive dashboard, connect your PostgreSQL database or upload your Excel files.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/app/sources">
-            <Button className="gap-1.5">
-              <Plus className="h-4 w-4" /> Connect Data Source
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <AnalyticalEmptyState
+        type="datasets"
+        title="No Active Datasets Connected"
+        description="To generate your interactive dashboard, connect your PostgreSQL database or upload your Excel workbooks into our vectorized DuckDB engine."
+        actionText="Connect Data Source"
+        actionHref="/app/sources"
+      />
     );
   }
 
@@ -380,7 +365,7 @@ export default function DashboardPage() {
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>3D Universe</span>
+              <span>Data Model</span>
             </button>
           </div>
 
@@ -414,22 +399,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Render View Depending on Stitch Perspective */}
+      {/* Render View Depending on Perspective */}
       {viewMode === "3d" ? (
-        <Card className="p-6 space-y-4 shadow-xl bg-[#0b1326] border border-cyan-500/30">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">3D Topological Join Universe</h3>
-              <p className="text-xs text-slate-400">
-                Interactive spatial relationship graph showing active Parquet tables, row counts, and join paths.
-              </p>
-            </div>
-            <Badge variant="outline" className="text-xs font-mono text-cyan-400 bg-cyan-500/10 border-cyan-500/30 self-start sm:self-auto">
-              DUCKDB VECTORIZED
-            </Badge>
-          </div>
-          <TopologyUniverse className="min-h-[500px]" />
-        </Card>
+        <DataModelVisualizer />
       ) : viewMode === "fabric" ? (
         <div className="space-y-6">
           <StitchPipelineFlowMap />

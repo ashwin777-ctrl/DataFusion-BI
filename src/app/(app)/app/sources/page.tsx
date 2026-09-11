@@ -19,6 +19,8 @@ import {
   FileCheck,
 } from "lucide-react";
 import { clientCache } from "@/lib/cache/client-cache";
+import { DataIngestionFlow } from "@/components/visuals/data-ingestion-flow";
+import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 interface SourceItem {
   id: string;
@@ -339,34 +341,37 @@ export default function SourcesPage() {
         </div>
       )}
 
+      {/* Visual Data Ingestion Architecture Flow */}
+      <DataIngestionFlow />
+
       {/* Quick Upload Drop Area */}
       <div
         onClick={() => fileInputRef.current?.click()}
-        className="group relative flex cursor-pointer flex-col items-center justify-center stitch-card border-2 border-dashed border-cyan-500/30 p-8 text-center transition-all hover:border-cyan-400/60 hover:shadow-[0_0_24px_rgba(56,189,248,0.15)]"
+        className="group relative flex cursor-pointer flex-col items-center justify-center p-8 rounded-[20px] bg-white dark:bg-[#151518] border-2 border-dashed border-[#0071E3]/30 hover:border-[#0071E3] text-center transition-all shadow-sm hover:shadow-md"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 transition-transform group-hover:scale-110 shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#0071E3]/10 text-[#0071E3] dark:text-[#0A84FF] transition-transform group-hover:scale-110 shadow-sm">
           <FileSpreadsheet className="h-6 w-6" />
         </div>
-        <h3 className="mt-3 text-base font-semibold text-foreground">Upload Spreadsheet or Data Table</h3>
-        <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-          Drag & drop Excel (.xlsx, .xls) or CSV/TSV files up to 100 MB. We automatically detect column types, dates, measures, and statistics.
+        <h3 className="mt-3 text-base font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Upload Spreadsheet or Data Table</h3>
+        <p className="mt-1 text-xs text-[#86868B] max-w-sm">
+          Drag & drop Excel (.xlsx, .xls) or CSV/TSV files up to 100 MB. Automated column type inference and Parquet conversion.
         </p>
         <div className="mt-4 flex items-center gap-2">
-          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.xlsx</Badge>
-          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.xls</Badge>
-          <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 bg-cyan-500/5">.csv</Badge>
-          <Badge variant="outline" className="text-[11px] border-emerald-500/30 text-emerald-400 bg-emerald-500/5">Multi-sheet</Badge>
+          <Badge variant="outline" className="text-[11px] border-[#0071E3]/30 text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/5">.xlsx</Badge>
+          <Badge variant="outline" className="text-[11px] border-[#0071E3]/30 text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/5">.xls</Badge>
+          <Badge variant="outline" className="text-[11px] border-[#0071E3]/30 text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/5">.csv</Badge>
+          <Badge variant="outline" className="text-[11px] border-[#34C759]/30 text-[#34C759] bg-[#34C759]/5">Multi-sheet</Badge>
         </div>
       </div>
 
       {/* Sources Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Layers className="h-5 w-5 text-cyan-400" />
+          <h2 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+            <Layers className="h-5 w-5 text-[#0071E3]" />
             Configured Sources ({sources.length})
           </h2>
-          <Button variant="ghost" size="sm" onClick={loadSources} className="gap-1 text-xs text-muted-foreground hover:text-cyan-400">
+          <Button variant="ghost" size="sm" onClick={loadSources} className="gap-1 text-xs text-[#86868B] hover:text-[#0071E3]">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -375,16 +380,17 @@ export default function SourcesPage() {
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 stitch-card animate-pulse" />
+              <div key={i} className="h-44 rounded-[18px] bg-white dark:bg-[#161618] border border-[#E5E5EA] dark:border-[#2C2C2E] animate-pulse" />
             ))}
           </div>
         ) : sources.length === 0 ? (
-          <div className="stitch-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">No data sources connected yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Upload an Excel workbook or click &quot;Load Sample Enterprise Dataset&quot; to test.
-            </p>
-          </div>
+          <AnalyticalEmptyState
+            type="datasets"
+            title="No Data Sources Connected Yet"
+            description="Upload an Excel workbook or load the sample enterprise dataset to initiate automatic schema extraction."
+            actionText="Upload File"
+            onAction={() => fileInputRef.current?.click()}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sources.map((src) => {

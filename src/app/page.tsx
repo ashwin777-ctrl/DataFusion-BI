@@ -2,33 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { InlineSignIn } from "@/components/auth/inline-sign-in";
 import { Button } from "@/components/ui/button";
 import {
-  Database,
-  FileSpreadsheet,
-  Sparkles,
   ArrowRight,
-  TrendingUp,
-  Cpu,
   CheckCircle2,
   Lock,
-  ChevronRight,
-  Layers,
   Terminal,
 } from "lucide-react";
 
-const HeroDataCore = dynamic(
-  () => import("@/components/3d/hero-data-core").then((m) => m.HeroDataCore),
-  { ssr: false }
-);
-
-const TopologyUniverse = dynamic(
-  () => import("@/components/3d/topology-universe").then((m) => m.TopologyUniverse),
-  { ssr: false }
-);
+import { AppleHeroWorkspace } from "@/components/visuals/apple-hero-workspace";
+import { DataIngestionFlow } from "@/components/visuals/data-ingestion-flow";
+import { DataModelVisualizer } from "@/components/visuals/data-model-visualizer";
+import { SystemArchitectureDiagram } from "@/components/visuals/system-architecture-diagram";
+import { SecurityMultiTenancyDiagram } from "@/components/visuals/security-multitenancy-diagram";
+import { InsightsStorytelling } from "@/components/visuals/insights-storytelling";
+import { ReportDeckVisualizer } from "@/components/visuals/report-deck-visualizer";
+import { FeatureAnalyticalCard } from "@/components/visuals/feature-analytical-card";
 
 export default function LandingPage() {
   const [inquiryStatus, setInquiryStatus] = useState<"idle" | "submitting" | "success">("idle");
@@ -64,36 +55,40 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-plane text-foreground selection:bg-blue-600 selection:text-white transition-colors duration-300">
-      {/* 1. Header Navigation */}
-      <header className="sticky top-0 z-50 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-black/75 backdrop-blur-2xl">
+    <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-[#0071E3] selection:text-white transition-colors duration-300">
+      {/* 1. Header Navigation - Apple Glass Command Bar */}
+      <header className="sticky top-0 z-50 border-b border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/80 dark:bg-black/80 backdrop-blur-2xl transition-colors">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 dark:bg-blue-500 text-white font-bold text-sm shadow-[0_2px_6px_rgba(0,113,227,0.35)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#0071E3] text-white font-bold text-sm shadow-[0_2px_8px_rgba(0,113,227,0.35)]">
                 DF
               </span>
-              <span className="font-display font-bold tracking-tight text-base sm:text-lg text-foreground">
-                DataFusion<span className="text-blue-600 dark:text-blue-400">BI</span>
+              <span className="font-semibold tracking-tight text-base sm:text-lg text-[#1D1D1F] dark:text-[#F5F5F7]">
+                DataFusion<span className="text-[#0071E3] dark:text-[#0A84FF]">BI</span>
               </span>
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <a href="#overview" className="transition-colors hover:text-foreground">Project Overview</a>
-            <a href="#architecture" className="transition-colors hover:text-foreground">Architecture</a>
-            <a href="#signin" className="transition-colors hover:text-foreground">Sign In</a>
+          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-[#86868B]">
+            <a href="#overview" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Workspace</a>
+            <a href="#sources" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Ingestion</a>
+            <a href="#topology" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Data Model</a>
+            <a href="#analytics" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Insights</a>
+            <a href="#reports" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Reports</a>
+            <a href="#security" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Security</a>
+            <a href="#architecture" className="transition-colors hover:text-[#1D1D1F] dark:hover:text-white">Architecture</a>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeSwitcher />
             <a href="#signin" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="sm" className="text-xs font-medium text-secondary-foreground hover:text-foreground rounded-full">
+              <Button variant="ghost" size="sm" className="text-xs font-medium rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white">
                 Sign In
               </Button>
             </a>
             <Link href="/login">
-              <Button size="sm" className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_2px_8px_rgba(0,113,227,0.35)] px-3.5 sm:px-4">
+              <Button size="sm" className="gap-1.5 text-xs font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-[0_2px_8px_rgba(0,113,227,0.3)] px-3.5 sm:px-4">
                 <span className="hidden sm:inline">Open Portal</span>
                 <span className="sm:hidden">Login</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -103,130 +98,264 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main>
-        {/* 2. PROJECT HERO SECTION WITH 3D DATA CORE */}
-        <section id="overview" className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-24 border-b border-black/[0.06] dark:border-white/[0.08]">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="space-y-24 sm:space-y-32 py-12 sm:py-16">
+        {/* 2. LANDING / HERO: Floating Analytics Workspace */}
+        <section id="overview" className="relative overflow-hidden px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
               
               {/* Left Column: Project Mission & Architectural Guarantees */}
-              <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] dark:border-white/[0.12] bg-black/[0.03] dark:bg-white/[0.05] px-3.5 py-1.5 backdrop-blur shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground font-mono">
-                    Next-Gen Enterprise BI
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/60 dark:bg-[#161618]/60 px-3.5 py-1.5 backdrop-blur shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-[#34C759] animate-pulse" />
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#86868B] font-mono">
+                    Next-Gen Analytics Engine
                   </span>
                 </div>
 
-                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl leading-[1.08] text-foreground">
-                  Intelligent Analytics. <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-300">
-                    Vectorized & Spatial.
+                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl leading-[1.08] text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  Precision Analytics. <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0071E3] via-[#5856D6] to-[#AF52DE]">
+                    Vectorized & Instant.
                   </span>
                 </h1>
 
-                <p className="text-base sm:text-lg text-secondary-foreground leading-relaxed max-w-xl">
+                <p className="text-base sm:text-lg text-[#86868B] leading-relaxed">
                   DataFusion BI is a high-performance business intelligence suite uniting in-process 
-                  <strong className="text-foreground"> DuckDB OLAP</strong>, real-time <strong className="text-foreground">PostgreSQL 16</strong> multi-tenant isolation, interactive <strong className="text-foreground">3D schema topologies</strong>, and autonomous statistical diagnostics.
+                  <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]"> DuckDB OLAP</strong>, real-time <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">PostgreSQL 16</strong> multi-tenant isolation, interactive <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">relational data models</strong>, and autonomous statistical diagnostics.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <a href="#signin">
-                    <Button size="md" className="h-11 px-6 gap-2 font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_4px_14px_rgba(0,113,227,0.35)]">
-                      <span>Sign In to Workspace</span>
+                    <Button size="md" className="h-11 px-6 gap-2 font-medium bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-[0_4px_14px_rgba(0,113,227,0.35)]">
+                      <span>Launch Workspace</span>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </a>
 
                   <Link href="/login">
-                    <Button variant="secondary" size="md" className="h-11 px-5 gap-2 font-medium rounded-full">
-                      <Terminal className="h-4 w-4 text-muted-foreground" />
+                    <Button variant="secondary" size="md" className="h-11 px-5 gap-2 font-medium rounded-full border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white dark:bg-[#1C1C1E]">
+                      <Terminal className="h-4 w-4 text-[#86868B]" />
                       <span>Dedicated Login</span>
                     </Button>
                   </Link>
-
-                  <a href="#architecture" className="text-xs font-mono text-muted-foreground hover:text-foreground px-2 py-2 flex items-center gap-1 transition-colors">
-                    <span>Explore System Specs</span>
-                    <ChevronRight className="h-3 w-3" />
-                  </a>
                 </div>
 
                 {/* Key Architectural Guarantees Strip */}
-                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-black/[0.06] dark:border-white/[0.08]">
-                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
-                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
-                      &lt;2<span className="text-muted-foreground text-sm font-mono">ms</span>
+                <div className="grid grid-cols-3 gap-3 pt-6 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                  <div className="p-3.5 rounded-[18px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      &lt;2<span className="text-[#86868B] text-xs font-mono">ms</span>
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium mt-0.5">In-Process OLAP</div>
+                    <div className="text-[11px] text-[#86868B] font-medium mt-0.5">In-Process DuckDB</div>
                   </div>
-                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
-                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
-                      100<span className="text-muted-foreground text-sm font-mono">%</span>
+                  <div className="p-3.5 rounded-[18px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      100<span className="text-[#86868B] text-xs font-mono">%</span>
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium mt-0.5">Postgres 16 RLS</div>
+                    <div className="text-[11px] text-[#86868B] font-medium mt-0.5">Postgres 16 RLS</div>
                   </div>
-                  <div className="p-4 rounded-[16px] bg-white dark:bg-[#101012] border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
-                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
-                      Zero<span className="text-muted-foreground text-sm font-mono">Copy</span>
+                  <div className="p-3.5 rounded-[18px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm">
+                    <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      Zero<span className="text-[#86868B] text-xs font-mono">Copy</span>
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium mt-0.5">Arrow / Parquet</div>
+                    <div className="text-[11px] text-[#86868B] font-medium mt-0.5">Arrow Parquet</div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Interactive 3D Spatial Intelligence Core */}
-              <div className="lg:col-span-6">
-                <div className="relative mx-auto h-[440px] sm:h-[500px] w-full max-w-[560px] rounded-3xl border border-white/15 bg-[#0a0a0a] p-2 shadow-2xl overflow-hidden">
-                  <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-[11px] font-mono text-zinc-300 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>THREE.JS DATA CORE (SPATIAL 3D)</span>
-                  </div>
-                  <HeroDataCore className="h-full w-full rounded-2xl overflow-hidden" />
-                </div>
+              {/* Right Column: Apple-Inspired Floating Analytics Workspace Visualizer */}
+              <div className="lg:col-span-7">
+                <AppleHeroWorkspace />
               </div>
 
             </div>
           </div>
         </section>
 
-        {/* 3. SIGN IN SECTION INSIDE THE WEBPAGE */}
-        <section id="signin" className="py-20 bg-[#050505] border-b border-white/10 relative">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* 3. DATA SOURCES: Multi-Source Ingestion Pipeline Flow */}
+        <section id="sources" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#0071E3] dark:text-[#0A84FF] font-semibold">
+                Unified Data Ingestion
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                Multi-Source Ingestion & Columnar Sanitization
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                Ingest messy workbooks or live database schemas into partitioned, Snappy-compressed Parquet lakehouses with automated type casting.
+              </p>
+            </div>
+
+            {/* Purposeful Ingestion Flow Diagram */}
+            <DataIngestionFlow />
+
+            {/* Feature Analytical Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <FeatureAnalyticalCard
+                type="ingest"
+                title="Excel & CSV Normalization"
+                badge="Active Connector"
+                description="Automatic multi-sheet detection, header parsing, delimiter inference, and null sanitization."
+                specs="Snappy Parquet v2 · Arrow Buffer"
+              />
+              <FeatureAnalyticalCard
+                type="rls"
+                title="PostgreSQL 16 Direct Sync"
+                badge="Port 5434 Verified"
+                description="Cryptographically secured connection with SSL encryption, schema introspection, and continuous change tracking."
+                specs="Strict Multi-Tenant RLS Policy"
+              />
+              <FeatureAnalyticalCard
+                type="simd"
+                title="DuckDB In-Process Vectorization"
+                badge="Vectorized SIMD"
+                description="Columnar SQL engine executing directly inside application process memory with zero-copy Arrow transfers."
+                specs="45M rows/sec · Parallel Group-By"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 4. DATA PREP / MODEL: Polished Schema Topology Visualizer */}
+        <section id="topology" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#5856D6] dark:text-[#AF52DE] font-semibold">
+                Relational Modeling
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                Interactive Data Model & Join Synthesizer
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                Discover foreign keys, primary keys, and common identifiers between your spreadsheets and transactional tables into an optimized star schema.
+              </p>
+            </div>
+
+            {/* Purposeful Data Model Visualizer */}
+            <DataModelVisualizer />
+          </div>
+        </section>
+
+        {/* 5. INSIGHTS / ANALYTICS: Intelligent Visual Storytelling */}
+        <section id="analytics" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#AF52DE] font-semibold">
+                Autonomous Diagnostics
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                Predictive Forecasting & Anomaly Attribution
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                Autonomous statistical scanner evaluating variance shifts, categorical distributions, and bayesian trajectory forecasts without manual SQL queries.
+              </p>
+            </div>
+
+            {/* Purposeful Insights Storytelling Diagram */}
+            <InsightsStorytelling />
+          </div>
+        </section>
+
+        {/* 6. REPORTS / EXPORT: Executive Report Deck Visualizer */}
+        <section id="reports" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#FF9500] font-semibold">
+                Automated Publication
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                Executive Publication & Multi-Format Decks
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                Distribute boardroom-ready vector PDF documents, structured Excel spreadsheets, and cryptographically verified audit summaries.
+              </p>
+            </div>
+
+            {/* Purposeful Report Deck Visualizer */}
+            <ReportDeckVisualizer />
+          </div>
+        </section>
+
+        {/* 7. SECURITY / MULTI-TENANCY: Layered Security Architecture */}
+        <section id="security" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#34C759] font-semibold">
+                Cryptographic Governance
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                Hardware-Enforced Multi-Tenant Isolation
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                Organization-level tenant separation, workspace boundaries, and PostgreSQL Row-Level Security guarantee zero data leakage between accounts.
+              </p>
+            </div>
+
+            {/* Purposeful Security Multi-Tenancy Diagram */}
+            <SecurityMultiTenancyDiagram />
+          </div>
+        </section>
+
+        {/* 8. SYSTEM ARCHITECTURE: End-to-End Technical Pipeline */}
+        <section id="architecture" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#0071E3] dark:text-[#0A84FF] font-semibold">
+                System Specifications
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">
+                End-to-End Engine Architecture
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-[#86868B]">
+                From client presentation to vectorized SIMD compute and columnar Parquet partitions: inspect every layer of the DataFusion pipeline.
+              </p>
+            </div>
+
+            {/* Purposeful System Architecture Diagram */}
+            <SystemArchitectureDiagram />
+          </div>
+        </section>
+
+        {/* 9. SIGN IN SECTION INSIDE THE WEBPAGE */}
+        <section id="signin" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl p-8 sm:p-12 rounded-[28px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
               {/* Left Column: Access Information */}
               <div className="lg:col-span-6 space-y-5">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-mono text-zinc-300">
-                  <Lock className="w-3.5 h-3.5 text-white" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0071E3]/10 text-xs font-mono text-[#0071E3] dark:text-[#0A84FF]">
+                  <Lock className="w-3.5 h-3.5" />
                   <span>SECURE GATEWAY ACCESS</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
                   Access Your Organization Workspace
                 </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
+                <p className="text-sm sm:text-base text-[#86868B] leading-relaxed">
                   Authenticate directly from this page to access your live analytics dashboard. 
                   All queries execute inside your cryptographically isolated PostgreSQL 16 tenant partition with automated session management.
                 </p>
 
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3 text-sm text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
                     <span>Instant access with pre-configured demo account</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
                     <span>Real-time DuckDB OLAP cluster telemetry & SQL profiler</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
                     <span>Seamless session token persistence with HTTP-only cookies</span>
                   </div>
                 </div>
 
                 <div className="pt-4 flex items-center gap-4">
                   <Link href="/login">
-                    <Button variant="outline" className="gap-2 border-white/20 text-white hover:bg-white/10 bg-transparent">
-                      <span>Prefer Full Login Page?</span>
+                    <Button variant="outline" className="gap-2 rounded-full text-xs font-medium border-[#E5E5EA] dark:border-[#2C2C2E]">
+                      <span>Prefer Dedicated Login Page?</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
@@ -242,354 +371,113 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 4. ABOUT THE PROJECT: ARCHITECTURE & ENGINE */}
-        <section id="architecture" className="py-20 border-b border-white/10 bg-black">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-14">
-              <span className="text-xs font-mono uppercase tracking-widest text-zinc-400 block mb-2 font-semibold">
-                System Specifications
+        {/* 10. ENTERPRISE INQUIRY FORM */}
+        <section id="inquiry" className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl p-8 sm:p-12 rounded-[28px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm">
+            <div className="text-center mb-8">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#86868B] block mb-2 font-semibold">
+                Private Deployment
               </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
-                About the DataFusion BI Platform
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Initiate Enterprise BI Assessment
               </h2>
-              <p className="mt-3 text-zinc-400 text-sm sm:text-base leading-relaxed">
-                Engineered from the ground up to eliminate analytical latency, brittle ETL chains, and sluggish cloud queries through a hybrid PostgreSQL 16 + DuckDB vectorized architecture.
+              <p className="mt-2 text-xs sm:text-sm text-[#86868B]">
+                Connect with our systems architects for private VPC deployment, custom DuckDB extensions, and specialized schema modeling.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Architecture Block 1 */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all space-y-4 shadow-xl">
-                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                  <Cpu className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">Vectorized DuckDB Kernel</h3>
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Processes millions of analytical records per second directly in process memory using SIMD vectorized execution kernels. Eliminates round-trip serialization overhead.
-                </p>
-                <div className="pt-2 text-xs font-mono text-zinc-300">
-                  Zero-Copy Arrow Parquet Partitions
-                </div>
-              </div>
-
-              {/* Architecture Block 2 */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all space-y-4 shadow-xl">
-                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                  <Database className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">PostgreSQL 16 Multi-Tenant RLS</h3>
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Strict cryptographic tenant isolation powered by PostgreSQL 16 Row-Level Security. Every schema, session, and joined table enforces organizational boundaries.
-                </p>
-                <div className="pt-2 text-xs font-mono text-emerald-400">
-                  Local Cluster Active on Port 5434
-                </div>
-              </div>
-
-              {/* Architecture Block 3 */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all space-y-4 shadow-xl">
-                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">Autonomous AI Diagnostics</h3>
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Automated anomaly detection sweeps categorical columns and variance shifts in real time, delivering executive briefing insights and risk flags without manual SQL queries.
-                </p>
-                <div className="pt-2 text-xs font-mono text-zinc-300">
-                  Deterministic Statistical Models
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. DATA SOURCES INGESTION */}
-        <section id="sources" className="border-b border-white/10 bg-[#050505] py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-14">
-              <span className="text-xs font-mono uppercase tracking-widest text-zinc-400 block mb-2 font-semibold">
-                High-Density Ingestion
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
-                Multi-Source Ingestion & Sanitization
-              </h2>
-              <p className="mt-3 text-zinc-400 text-sm sm:text-base">
-                Whether spreadsheets or enterprise transactional databases, DataFusion normalizes schemas into high-efficiency Parquet partitions.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Excel / CSV Card */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all shadow-xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">
-                  <FileSpreadsheet className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">Excel & CSV Upload</h3>
-                <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Drag-and-drop workbook ingestion supporting .xlsx, .xls, and .csv. Automatic multi-sheet detection, type inference, and dirty-data sanitization.
-                </p>
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-white/10">
-                  <span className="text-xs font-mono text-emerald-400 font-semibold">Active Connector</span>
-                  <Link href="/app/sources" className="text-xs font-bold text-white flex items-center gap-1 hover:translate-x-1 transition-transform">
-                    Upload File <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* PostgreSQL Card */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all shadow-xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white border border-white/20 mb-4">
-                  <Database className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">PostgreSQL 16 Direct</h3>
-                <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Cryptographically secured direct database connector with SSL encryption, schema introspection, table selection, and continuous change sync.
-                </p>
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-white/10">
-                  <span className="text-xs font-mono text-zinc-300 font-semibold">Verified on Port 5434</span>
-                  <Link href="/app/sources" className="text-xs font-bold text-white flex items-center gap-1 hover:translate-x-1 transition-transform">
-                    Connect DB <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Columnar DuckDB Engine Card */}
-              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 hover:border-white/20 transition-all shadow-xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white border border-white/20 mb-4">
-                  <Cpu className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold font-display text-white">DuckDB In-Process OLAP</h3>
-                <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                  Vectorized analytical SQL engine executing directly inside the application process. Zero network serialization bottleneck for 1M+ row aggregations.
-                </p>
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-white/10">
-                  <span className="text-xs font-mono text-zinc-300 font-semibold">DuckDB 1.3.4</span>
-                  <Link href="/app" className="text-xs font-bold text-white flex items-center gap-1 hover:translate-x-1 transition-transform">
-                    View Engine <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. 3D TOPOLOGY UNIVERSE & SCHEMA MODELING */}
-        <section id="topology" className="py-20 border-b border-white/10 bg-black">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-              
-              <div className="lg:col-span-5 space-y-5">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-mono text-zinc-300">
-                  <Layers className="w-3.5 h-3.5 text-white" />
-                  <span>SPATIAL SCHEMA MODELING</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
-                  Visual Relationship Modeling & Automated Joins
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-                  DataFusion automatically detects foreign keys, primary keys, and common identifiers between your spreadsheets and database tables, synthesizing them into a queryable relational star schema.
-                </p>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3 text-sm font-medium text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Source Validation & Schema Normalization</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm font-medium text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Automated Foreign Key & Lineage Inference</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm font-medium text-zinc-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>In-Memory Consolidation View Generation</span>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <Link href="/app/prep">
-                    <Button size="md" className="gap-2 font-bold bg-white text-black hover:bg-zinc-200 shadow-xl">
-                      <span>Launch Modeling Canvas</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="lg:col-span-7">
-                <div className="rounded-2xl border border-white/15 bg-[#0a0a0a] p-2 shadow-2xl overflow-hidden">
-                  <TopologyUniverse className="rounded-xl" />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* 7. LIVE ANALYTICS PREVIEW */}
-        <section id="analytics" className="border-b border-white/10 bg-[#050505] py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-14">
-              <span className="text-xs font-mono uppercase tracking-widest text-zinc-400 block mb-2 font-semibold">
-                Executive Command Center
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
-                Adaptive Analytical Dashboards
-              </h2>
-              <p className="mt-3 text-zinc-400 text-sm sm:text-base">
-                Dynamically generated KPIs and high-contrast visualizations tailored precisely to your dataset&apos;s discovered dimensions.
-              </p>
-            </div>
-
-            {/* KPI Strip */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="p-5 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-lg">
-                <span className="text-xs font-semibold text-zinc-400">Total Ingestion Volume</span>
-                <div className="mt-2 text-2xl font-extrabold font-display text-white">4.82B</div>
-                <div className="mt-1 flex items-center gap-1 text-xs text-emerald-400 font-semibold font-mono">
-                  <TrendingUp className="h-3 w-3" />
-                  <span>+18.4% 24h</span>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-lg">
-                <span className="text-xs font-semibold text-zinc-400">Median Query Latency</span>
-                <div className="mt-2 text-2xl font-extrabold font-display text-white">0.14ms</div>
-                <div className="mt-1 text-xs text-emerald-400 font-mono">P99: 412ms</div>
-              </div>
-
-              <div className="p-5 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-lg">
-                <span className="text-xs font-semibold text-zinc-400">Active Partitions</span>
-                <div className="mt-2 text-2xl font-extrabold font-display text-white">1,024</div>
-                <div className="mt-1 text-xs text-zinc-400 font-mono">100% Online</div>
-              </div>
-
-              <div className="p-5 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-lg">
-                <span className="text-xs font-semibold text-zinc-400">Schema Violations</span>
-                <div className="mt-2 text-2xl font-extrabold font-display text-white">0</div>
-                <div className="mt-1 text-xs text-emerald-400 font-semibold">Strict Types</div>
-              </div>
-            </div>
-
-            <div className="text-center pt-2">
-              <Link href="/login">
-                <Button size="md" className="gap-2 font-bold bg-white text-black hover:bg-zinc-200 shadow-xl">
-                  <span>Enter Live BI Workspace</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* 8. ENTERPRISE ASSESSMENT FORM */}
-        <section id="inquiry" className="py-20 bg-black">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <div className="p-8 sm:p-10 rounded-2xl bg-[#0a0a0a] border border-white/10 shadow-2xl backdrop-blur">
-              <div className="text-center mb-8">
-                <span className="text-xs font-mono uppercase tracking-widest text-zinc-400 block mb-2 font-semibold">
-                  Private Deployment
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-white">
-                  Initiate Enterprise 3D BI Assessment
-                </h2>
-                <p className="mt-2 text-xs sm:text-sm text-zinc-400">
-                  Connect with our systems architects for private VPC deployment, custom DuckDB extensions, and specialized 3D topology modeling.
-                </p>
-              </div>
-
-              <form onSubmit={handleInquirySubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={inquiryName}
-                      onChange={(e) => setInquiryName(e.target.value)}
-                      placeholder="e.g. Maya Lin"
-                      className="w-full rounded-md border border-white/15 bg-black px-3.5 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      Work Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={inquiryEmail}
-                      onChange={(e) => setInquiryEmail(e.target.value)}
-                      placeholder="maya@enterprise.com"
-                      className="w-full rounded-md border border-white/15 bg-black px-3.5 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleInquirySubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Architecture Scope & Data Footprint <span className="text-red-500">*</span>
+                  <label className="block text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1">
+                    Full Name <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    rows={3}
-                    value={inquiryMessage}
-                    onChange={(e) => setInquiryMessage(e.target.value)}
-                    placeholder="Describe your current data warehouse volume, spreadsheet complexity, and analytics targets..."
-                    className="w-full rounded-md border border-white/15 bg-black px-3.5 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                  <input
+                    type="text"
+                    value={inquiryName}
+                    onChange={(e) => setInquiryName(e.target.value)}
+                    placeholder="e.g. Maya Lin"
+                    className="w-full rounded-[12px] border border-[#E5E5EA] dark:border-[#2C2C2E] bg-[#FBFBFD] dark:bg-[#18181A] px-3.5 py-2.5 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] outline-none focus:border-[#0071E3] transition-all"
                     required
                   />
                 </div>
 
-                {inquiryError && (
-                  <div className="rounded-md bg-red-500/10 border border-red-500/20 p-3 text-xs font-semibold text-red-400">
-                    {inquiryError}
-                  </div>
-                )}
-
-                {inquiryStatus === "success" && (
-                  <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-semibold text-emerald-400">
-                    Inquiry received. Our systems engineering lead will reach out within 24 hours.
-                  </div>
-                )}
-
-                <div className="pt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
-                    <Lock className="h-3.5 w-3.5" />
-                    <span>Encrypted transmission · Zero data sharing</span>
-                  </div>
-
-                  <Button type="submit" disabled={inquiryStatus === "submitting"} className="px-6 font-bold bg-white text-black hover:bg-zinc-200 shadow-md">
-                    {inquiryStatus === "submitting" ? "Transmitting..." : "Submit Inquiry"}
-                  </Button>
+                <div>
+                  <label className="block text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1">
+                    Work Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={inquiryEmail}
+                    onChange={(e) => setInquiryEmail(e.target.value)}
+                    placeholder="maya@enterprise.com"
+                    className="w-full rounded-[12px] border border-[#E5E5EA] dark:border-[#2C2C2E] bg-[#FBFBFD] dark:bg-[#18181A] px-3.5 py-2.5 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] outline-none focus:border-[#0071E3] transition-all"
+                    required
+                  />
                 </div>
-              </form>
-            </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] mb-1">
+                  Architecture Scope & Data Footprint <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={inquiryMessage}
+                  onChange={(e) => setInquiryMessage(e.target.value)}
+                  placeholder="Describe your current data warehouse volume, spreadsheet complexity, and analytics targets..."
+                  className="w-full rounded-[12px] border border-[#E5E5EA] dark:border-[#2C2C2E] bg-[#FBFBFD] dark:bg-[#18181A] px-3.5 py-2.5 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] outline-none focus:border-[#0071E3] transition-all"
+                  required
+                />
+              </div>
+
+              {inquiryError && (
+                <div className="rounded-[12px] bg-red-500/10 border border-red-500/20 p-3 text-xs font-semibold text-red-500">
+                  {inquiryError}
+                </div>
+              )}
+
+              {inquiryStatus === "success" && (
+                <div className="rounded-[12px] bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-semibold text-[#34C759]">
+                  Inquiry received. Our systems engineering lead will reach out within 24 hours.
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[11px] text-[#86868B] font-medium">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Encrypted transmission · Zero data sharing</span>
+                </div>
+
+                <Button type="submit" disabled={inquiryStatus === "submitting"} className="px-6 font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-sm">
+                  {inquiryStatus === "submitting" ? "Transmitting..." : "Submit Inquiry"}
+                </Button>
+              </div>
+            </form>
           </div>
         </section>
       </main>
 
-      {/* 9. GLOBAL FOOTER */}
-      <footer className="border-t border-white/10 bg-black py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white text-black font-black text-xs">
+      {/* 11. GLOBAL FOOTER - Apple Style Clean Editorial */}
+      <footer className="border-t border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/60 dark:bg-[#0A0A0C] py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-[#0071E3] text-white font-bold text-xs">
               DF
             </span>
-            <span className="font-display font-extrabold text-sm text-white">DataFusion BI</span>
-            <span className="text-zinc-500 text-xs">· Embedded In-Process Intelligence</span>
+            <span className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">DataFusion BI</span>
+            <span className="text-[#86868B] text-xs">· Embedded In-Process Intelligence</span>
           </div>
 
-          <div className="flex items-center gap-6 text-xs text-zinc-400">
-            <a href="#signin" className="hover:text-white transition-colors">Sign In</a>
-            <Link href="/login" className="hover:text-white transition-colors">Login Page</Link>
-            <Link href="/signup" className="hover:text-white transition-colors">Register</Link>
-            <a href="#overview" className="hover:text-white transition-colors">Back to Top</a>
+          <div className="flex items-center gap-6 text-xs text-[#86868B]">
+            <a href="#signin" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Sign In</a>
+            <Link href="/login" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Login Page</Link>
+            <Link href="/signup" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Register</Link>
+            <a href="#overview" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Back to Top</a>
           </div>
 
-          <div className="text-[11px] text-zinc-500 font-mono">
-            © 2026 DataFusion. PostgreSQL 16 & DuckDB 1.3.4.
+          <div className="text-[11px] text-[#86868B] font-mono">
+            © 2026 DataFusion BI. PostgreSQL 16 & DuckDB Vectorized.
           </div>
         </div>
       </footer>

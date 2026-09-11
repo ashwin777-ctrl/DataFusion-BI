@@ -13,6 +13,8 @@ import {
   Target,
 } from "lucide-react";
 import { clientCache } from "@/lib/cache/client-cache";
+import { InsightsStorytelling } from "@/components/visuals/insights-storytelling";
+import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 export default function InsightsPage() {
   const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
@@ -101,16 +103,13 @@ export default function InsightsPage() {
 
   if (datasets.length === 0) {
     return (
-      <div className="p-8 text-center space-y-4 rounded-xl border border-dashed border-border bg-card">
-        <Sparkles className="h-8 w-8 text-primary mx-auto" />
-        <h2 className="text-lg font-semibold text-foreground">No datasets available for analysis</h2>
-        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-          Upload data or configure a data model to automatically generate business insights.
-        </p>
-        <Link href="/app/sources">
-          <Button size="sm">Go to Data Sources</Button>
-        </Link>
-      </div>
+      <AnalyticalEmptyState
+        type="insights"
+        title="No Datasets Available for Statistical Analysis"
+        description="Upload data or configure a data model to automatically generate bayesian forecasts and anomaly detections."
+        actionText="Go to Data Sources"
+        actionHref="/app/sources"
+      />
     );
   }
 
@@ -150,6 +149,9 @@ export default function InsightsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Visual Statistical Storytelling & Anomaly Detection */}
+      <InsightsStorytelling />
 
       {refreshing ? (
         <div className="p-12 text-center text-sm text-muted-foreground animate-pulse">

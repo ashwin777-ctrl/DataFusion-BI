@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  FileText,
-  Download,
-  FileSpreadsheet,
+import { 
+  FileText, 
+  Download, 
+  FileSpreadsheet, 
   FileCode,
-  Printer,
-  AlertCircle,
+  Printer, 
+  AlertCircle 
 } from "lucide-react";
+import { ReportDeckVisualizer } from "@/components/visuals/report-deck-visualizer";
+import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 export default function ReportsPage() {
   const [datasets, setDatasets] = useState<any[]>([]);
@@ -121,16 +122,13 @@ export default function ReportsPage() {
 
   if (datasets.length === 0) {
     return (
-      <div className="p-8 text-center space-y-4 rounded-xl border border-dashed border-border bg-card">
-        <FileText className="h-8 w-8 text-primary mx-auto" />
-        <h2 className="text-lg font-semibold text-foreground">No datasets configured for reporting</h2>
-        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-          Connect your sources to generate executive reports and multi-format exports.
-        </p>
-        <Link href="/app/sources">
-          <Button size="sm">Go to Data Sources</Button>
-        </Link>
-      </div>
+      <AnalyticalEmptyState
+        type="reports"
+        title="No Datasets Configured for Executive Reporting"
+        description="Connect your sources or generate an analytical model to compile and export boardroom-ready reports."
+        actionText="Go to Data Sources"
+        actionHref="/app/sources"
+      />
     );
   }
 
@@ -162,6 +160,9 @@ export default function ReportsPage() {
           </select>
         </div>
       </div>
+
+      {/* Visual Report Deck Visualizer */}
+      <ReportDeckVisualizer />
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">

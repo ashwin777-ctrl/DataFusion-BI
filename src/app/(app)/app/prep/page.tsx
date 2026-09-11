@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { clientCache } from "@/lib/cache/client-cache";
+import { DataModelVisualizer } from "@/components/visuals/data-model-visualizer";
 
 export default function PrepPage() {
   const router = useRouter();
@@ -200,6 +201,9 @@ export default function PrepPage() {
           className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold"
         />
       </div>
+
+      {/* Interactive Relational Data Model Visualizer */}
+      <DataModelVisualizer />
 
       {/* Step 1: Select Sources */}
       <div className="stitch-card p-6 space-y-4">

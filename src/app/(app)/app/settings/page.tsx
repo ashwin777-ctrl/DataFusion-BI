@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   RefreshCw,
 } from "lucide-react";
+import { SecurityMultiTenancyDiagram } from "@/components/visuals/security-multitenancy-diagram";
+import { SystemArchitectureDiagram } from "@/components/visuals/system-architecture-diagram";
 
 export default function SettingsPage() {
   const [testingDb, setTestingDb] = useState(false);
@@ -182,6 +184,12 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Visual Multi-Tenancy & Row-Level Security Architecture */}
+      <SecurityMultiTenancyDiagram />
+
+      {/* Visual End-to-End System Engine Architecture */}
+      <SystemArchitectureDiagram />
     </div>
   );
 }
