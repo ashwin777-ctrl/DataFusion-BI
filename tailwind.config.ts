@@ -71,9 +71,15 @@ const config: Config = {
         },
       },
       borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
+        xs: "var(--radius-xs, 4px)",
+        sm: "var(--radius-sm, 8px)",
+        md: "var(--radius-md, 12px)",
+        lg: "var(--radius-lg, 16px)",
+        xl: "var(--radius-xl, 20px)",
+        "2xl": "var(--radius-2xl, 28px)",
+        squircle: "16px",
+        bento: "20px",
+        pill: "9999px",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
@@ -87,6 +93,10 @@ const config: Config = {
       boxShadow: {
         "elev-1": "var(--elev-1)",
         "elev-2": "var(--elev-2)",
+        "elev-3": "var(--elev-3)",
+        "apple-rest": "0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02)",
+        "apple-hover": "0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03)",
+        "apple-popover": "0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)",
       },
       keyframes: {
         shimmer: {
