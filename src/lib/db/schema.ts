@@ -587,6 +587,179 @@ export const jobs = pgTable(
   }),
 );
 
+// ─── DataFusion Compare Module ─────────────────────────────────────────────
+export const comparisonJobs = pgTable(
+  "comparison_jobs",
+  {
+    id: id(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull().default("Dataset Comparison"),
+    source1Metadata: jsonb("source1_metadata"),
+    source2Metadata: jsonb("source2_metadata"),
+    status: text("status").notNull().default("draft"), // draft|profiling|mapping|running|completed|failed
+    matchingConfiguration: jsonb("matching_configuration"),
+    errorMessage: text("error_message"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byOrg: index("comparison_jobs_org_idx").on(t.orgId, t.createdAt),
+  }),
+);
+
+export const comparisonSources = pgTable(
+  "comparison_sources",
+  {
+    id: id(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => comparisonJobs.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sourceIndex: integer("source_index").notNull(), // 1 or 2
+    sourceType: text("source_type").notNull().default("FILE"), // FILE | POSTGRESQL_EXPORT
+    sourceRole: text("source_role").notNull().default("PRIMARY"), // PRIMARY | SECONDARY
+    originalFilename: text("original_filename").notNull(),
+    format: text("format").notNull(), // csv|tsv|xlsx|xls|json|parquet
+    storageKey: text("storage_key").notNull(),
+    rowCount: bigint("row_count", { mode: "number" }),
+    columnCount: integer("column_count"),
+    schemaJson: jsonb("schema_json"),
+    profileJson: jsonb("profile_json"),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byJob: index("comparison_sources_job_idx").on(t.jobId),
+    byOrg: index("comparison_sources_org_idx").on(t.orgId),
+  }),
+);
+
+export const stagingTables = pgTable(
+  "staging_tables",
+  {
+    id: id(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => comparisonJobs.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sourceId: uuid("source_id").references(() => comparisonSources.id, {
+      onDelete: "cascade",
+    }),
+    tableName: text("table_name").notNull(),
+    schemaDefinition: jsonb("schema_definition"),
+    rowCount: bigint("row_count", { mode: "number" }),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+  },
+  (t) => ({
+    byJob: index("staging_tables_job_idx").on(t.jobId),
+    byOrg: index("staging_tables_org_idx").on(t.orgId),
+  }),
+);
+
+export const comparisonColumnMappings = pgTable(
+  "comparison_column_mappings",
+  {
+    id: id(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => comparisonJobs.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source1Column: text("source1_column").notNull(),
+    source2Column: text("source2_column").notNull(),
+    detectedSimilarity: doublePrecision("detected_similarity").notNull().default(0),
+    mappingMethod: text("mapping_method").notNull().default("exact"),
+    isKey: boolean("is_key").notNull().default(false),
+    manuallyConfirmed: boolean("manually_confirmed").notNull().default(false),
+    ignored: boolean("ignored").notNull().default(false),
+  },
+  (t) => ({
+    byJob: index("comparison_mappings_job_idx").on(t.jobId),
+  }),
+);
+
+export const comparisonResults = pgTable(
+  "comparison_results",
+  {
+    id: id(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => comparisonJobs.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    recordKey: text("record_key"),
+    status: text("status").notNull(), // matched|mismatched|orphan_source1|orphan_source2|duplicate
+    source1Record: jsonb("source1_record"),
+    source2Record: jsonb("source2_record"),
+    differencesJson: jsonb("differences_json"),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byJobStatus: index("comparison_results_job_status_idx").on(t.jobId, t.status),
+    byOrg: index("comparison_results_org_idx").on(t.orgId),
+  }),
+);
+
+export const comparisonSummaries = pgTable(
+  "comparison_summaries",
+  {
+    id: id(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => comparisonJobs.id, { onDelete: "cascade" })
+      .unique(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    totalSource1: bigint("total_source1", { mode: "number" }).notNull().default(0),
+    totalSource2: bigint("total_source2", { mode: "number" }).notNull().default(0),
+    matchedCount: bigint("matched_count", { mode: "number" }).notNull().default(0),
+    mismatchedCount: bigint("mismatched_count", { mode: "number" }).notNull().default(0),
+    orphanSource1Count: bigint("orphan_source1_count", { mode: "number" }).notNull().default(0),
+    orphanSource2Count: bigint("orphan_source2_count", { mode: "number" }).notNull().default(0),
+    duplicateCount: bigint("duplicate_count", { mode: "number" }).notNull().default(0),
+    matchRate: doublePrecision("match_rate").notNull().default(0),
+    qualityScore: doublePrecision("quality_score").notNull().default(100),
+    detailsJson: jsonb("details_json"),
+  },
+  (t) => ({
+    byJob: uniqueIndex("comparison_summaries_job_uq").on(t.jobId),
+    byOrg: index("comparison_summaries_org_idx").on(t.orgId),
+  }),
+);
+
+export const comparisonSchedules = pgTable(
+  "comparison_schedules",
+  {
+    id: id(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    cronExpression: text("cron_expression").notNull().default("0 0 * * *"),
+    config: jsonb("config"),
+    status: text("status").notNull().default("active"),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byOrg: index("comparison_schedules_org_idx").on(t.orgId),
+  }),
+);
+
 // All tenant-scoped tables, for RLS application (see rls.sql / migrate.ts).
 export const ORG_SCOPED_TABLES = [
   "organizations",
@@ -607,4 +780,11 @@ export const ORG_SCOPED_TABLES = [
   "report_exports",
   "audit_log",
   "jobs",
+  "comparison_jobs",
+  "comparison_sources",
+  "staging_tables",
+  "comparison_column_mappings",
+  "comparison_results",
+  "comparison_summaries",
+  "comparison_schedules",
 ] as const;

@@ -76,7 +76,7 @@ async function main() {
   try {
     await inDb.query(`ALTER SCHEMA public OWNER TO ${q(OWNER_ROLE)}`);
     await inDb.query(`GRANT ALL ON SCHEMA public TO ${q(OWNER_ROLE)}`);
-    await inDb.query(`GRANT USAGE ON SCHEMA public TO ${q(APP_ROLE)}`);
+    await inDb.query(`GRANT USAGE, CREATE ON SCHEMA public TO ${q(APP_ROLE)}`);
     await inDb.query(
       `ALTER DEFAULT PRIVILEGES FOR ROLE ${q(OWNER_ROLE)} IN SCHEMA public ` +
         `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${q(APP_ROLE)}`,

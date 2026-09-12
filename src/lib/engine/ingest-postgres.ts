@@ -24,6 +24,51 @@ export interface RemoteTableInfo {
   columns: Array<{ name: string; type: string; isNullable: boolean }>;
 }
 
+export function parsePgConnectionString(raw?: string): Partial<PgConnectionConfig> | null {
+  if (!raw?.trim()) return null;
+  try {
+    let trimmed = raw.trim();
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+    if (!trimmed.startsWith("postgres://") && !trimmed.startsWith("postgresql://")) {
+      trimmed = "postgres://" + trimmed;
+    }
+    const u = new URL(trimmed);
+    if (!u.hostname) return null;
+
+    const sslMode = u.searchParams.get("sslmode");
+    const isLocal =
+      u.hostname === "localhost" ||
+      u.hostname === "127.0.0.1" ||
+      u.hostname === "::1" ||
+      u.hostname.startsWith("192.168.") ||
+      u.hostname.startsWith("10.");
+
+    let ssl: boolean | undefined = undefined;
+    if (sslMode === "disable") {
+      ssl = false;
+    } else if (sslMode === "require" || sslMode === "verify-full" || sslMode === "verify-ca") {
+      ssl = true;
+    } else if (isLocal) {
+      ssl = false;
+    } else if (!isLocal && sslMode !== null) {
+      ssl = true;
+    }
+
+    return {
+      host: u.hostname,
+      port: u.port ? Number(u.port) : 5432,
+      database: decodeURIComponent(u.pathname.replace(/^\//, "") || "postgres"),
+      user: decodeURIComponent(u.username || "postgres"),
+      password: decodeURIComponent(u.password || ""),
+      ssl,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function resolvePgSsl(config: PgConnectionConfig) {
   if (config.ssl === false || config.ssl === "disable") return false;
   if (config.ssl === true || config.ssl === "require") return { rejectUnauthorized: false };
@@ -44,12 +89,35 @@ function checkCloudLocalhost(host: string): string | null {
   return null;
 }
 
+export function normalizePgConfig(config: PgConnectionConfig): PgConnectionConfig {
+  let normalized = { ...config };
+  if (normalized.host?.startsWith("postgres://") || normalized.host?.startsWith("postgresql://")) {
+    const parsed = parsePgConnectionString(normalized.host);
+    if (parsed) {
+      normalized = { ...normalized, ...parsed } as PgConnectionConfig;
+    }
+  }
+
+  // Handle host:port passed as host string (e.g. "127.0.0.1:5434")
+  if (normalized.host && normalized.host.includes(":") && !normalized.host.includes("[")) {
+    const parts = normalized.host.split(":");
+    normalized.host = parts[0] || "127.0.0.1";
+    if (parts[1] && !isNaN(Number(parts[1]))) {
+      normalized.port = Number(parts[1]);
+    }
+  }
+
+  return normalized;
+}
+
 /**
  * Test an external PostgreSQL database connection with strict timeout.
  */
 export async function testPostgresConnection(
-  config: PgConnectionConfig,
+  rawConfig: PgConnectionConfig,
 ): Promise<{ ok: boolean; version?: string; latencyMs?: number; error?: string }> {
+  const config = normalizePgConfig(rawConfig);
+
   const localErr = checkCloudLocalhost(config.host);
   if (localErr) {
     return { ok: false, error: localErr };
@@ -61,7 +129,7 @@ export async function testPostgresConnection(
     port: config.port || 5432,
     database: config.database,
     user: config.user,
-    password: config.password,
+    password: config.password != null ? String(config.password) : "",
     ssl: resolvePgSsl(config),
     connectionTimeoutMillis: 5000,
     statement_timeout: 5000,
@@ -83,8 +151,10 @@ export async function testPostgresConnection(
  * Fetch available schemas and tables from the external PostgreSQL database.
  */
 export async function listPostgresTables(
-  config: PgConnectionConfig,
+  rawConfig: PgConnectionConfig,
 ): Promise<RemoteTableInfo[]> {
+  const config = normalizePgConfig(rawConfig);
+
   const localErr = checkCloudLocalhost(config.host);
   if (localErr) {
     throw new Error(localErr);
@@ -179,7 +249,8 @@ export async function ingestPostgresTable(params: {
   primaryParquetPath: string;
   profile: DatasetProfile;
 }> {
-  const { orgId, sourceId, config, tableSchema, tableName, limit } = params;
+  const { orgId, sourceId, tableSchema, tableName, limit } = params;
+  const config = normalizePgConfig(params.config);
 
   const localErr = checkCloudLocalhost(config.host);
   if (localErr) {

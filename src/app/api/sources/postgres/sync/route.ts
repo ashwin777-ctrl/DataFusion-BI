@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireOrg } from "@/lib/auth/current-user";
 import { withOrg, schema } from "@/lib/db";
-import { ingestPostgresTable } from "@/lib/engine/ingest-postgres";
+import { ingestPostgresTable, parsePgConnectionString } from "@/lib/engine/ingest-postgres";
 import { persistStorageBlob } from "@/lib/engine/duckdb";
 import { randomUUID } from "node:crypto";
 import { statSync, readFileSync } from "node:fs";
@@ -13,11 +13,39 @@ export async function POST(req: NextRequest) {
     const { orgId } = await requireOrg();
 
     const body = await req.json();
-    const { host, port, database, user, password, ssl, tableSchema, tableName, limit } = body;
+    const { tableSchema, tableName, limit } = body;
+    const connectionString = body.connectionString || body.uri || body.url;
+    let host = body.host || body.hostname || body.dbHost || body.databaseHost;
+    let port = body.port || body.dbPort;
+    let database = body.database || body.dbName || body.databaseName;
+    let user = body.user || body.username || body.dbUser;
+    let password = body.password !== undefined ? body.password : (body.pass !== undefined ? body.pass : "");
+    let ssl = body.ssl;
+
+    if (connectionString || host?.startsWith("postgres://") || host?.startsWith("postgresql://")) {
+      const parsed = parsePgConnectionString(connectionString || host);
+      if (parsed) {
+        host = parsed.host || host;
+        port = parsed.port || port;
+        database = parsed.database || database;
+        user = parsed.user || user;
+        if (!password) password = parsed.password || "";
+        if (ssl === undefined) ssl = parsed.ssl;
+      }
+    }
+
+    // Split host:port if provided in host
+    if (host && typeof host === "string" && host.includes(":") && !host.includes("[")) {
+      const parts = host.split(":");
+      host = parts[0];
+      if (parts[1] && !isNaN(Number(parts[1]))) {
+        port = Number(parts[1]);
+      }
+    }
 
     if (!host || !database || !user || !tableSchema || !tableName) {
       return NextResponse.json(
-        { error: "Database configuration and table name are required" },
+        { error: "Database configuration (host, database, user) and table name are required" },
         { status: 400 },
       );
     }

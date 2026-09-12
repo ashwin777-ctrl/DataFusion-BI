@@ -1,7 +1,15 @@
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { existsSync, mkdirSync, writeFileSync, statSync } from "node:fs";
 import { resolve, join, dirname, basename } from "node:path";
-import { pool } from "@/lib/db";
+
+async function getDbPool() {
+  try {
+    const dbModule = await import("@/lib/db");
+    return dbModule.pool;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Embedded DuckDB analytical engine (PRD §4 / FR-3.1).
@@ -62,6 +70,8 @@ export async function persistStorageBlob(filePath: string, buffer: Buffer): Prom
   const norm = filePath.replace(/\\/g, "/");
   const canonicalNorm = toCanonicalLocalPath(filePath).replace(/\\/g, "/");
   try {
+    const pool = await getDbPool();
+    if (!pool) return;
     const client = await pool.connect();
     try {
       await client.query(
@@ -106,6 +116,8 @@ export async function ensureStorageBlob(filePath: string, originalStoredPath?: s
   }
 
   try {
+    const pool = await getDbPool();
+    if (!pool) return existsSync(norm);
     const client = await pool.connect();
     try {
       const fileName = basename(norm);

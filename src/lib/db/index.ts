@@ -1,5 +1,6 @@
 import "server-only";
-import { Pool, type PoolClient } from "pg";
+import pg, { type Pool as PgPool, type PoolClient } from "pg";
+const { Pool } = pg;
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { env } from "@/env";
@@ -21,7 +22,7 @@ import * as schema from "./schema";
 
 declare global {
   // Reuse the pool across HMR reloads in dev.
-  var __biPool: Pool | undefined;
+  var __biPool: PgPool | undefined;
 }
 
 const isRemoteOrSsl =

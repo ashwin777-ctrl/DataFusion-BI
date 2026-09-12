@@ -1,0 +1,594 @@
+{
+  "gitHash": "d9b6e6c",
+  "timestamp": "2026-09-08T10:46:16.256Z",
+  "targetUrl": "https://data-fusion-bi.vercel.app",
+  "phases": {
+    "auth": {
+      "loginPageLoad": 472,
+      "loginDuration": 3134,
+      "cookieCount": 1
+    },
+    "landing": {
+      "totalLanding": 1429,
+      "navTiming": {
+        "ttfb": 104,
+        "domInteractive": 301,
+        "domComplete": 310,
+        "fcp": 508,
+        "lcp": null,
+        "longTaskCount": 0,
+        "longTaskTotal": 0
+      },
+      "apiCalls": [],
+      "consoleErrors": [
+        "[warning] [.WebGL-0x593c001b2200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x593c007ace00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x593c001b2200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x593c001b2200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+        "[warning] Deprecated API for given entry type.",
+        "[warning] Deprecated API for given entry type."
+      ]
+    },
+    "dashboardCold": {
+      "timeline": {
+        "T0": 0,
+        "T1_ttfb": 94,
+        "T2_htmlReceived": 444,
+        "T3_domContentLoaded": 513,
+        "T4_domInteractive": 507,
+        "T5_fcp": 576,
+        "T6_reactShell": 718,
+        "T27_networkIdle": 3618,
+        "lcp": null,
+        "longTaskCount": 0,
+        "longTaskTotal": 0
+      },
+      "apiWaterfall": [
+        {
+          "method": "POST",
+          "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+          "status": 200,
+          "requestStart": 0.661,
+          "responseStart": 1505.877,
+          "responseEnd": 1507.47,
+          "duration": 1507,
+          "ttfb": 1505,
+          "size": 525,
+          "headers": {
+            "cacheControl": "private, max-age=10, stale-while-revalidate=60",
+            "xResponseTime": null
+          }
+        },
+        {
+          "method": "GET",
+          "url": "/api/datasets",
+          "status": 200,
+          "requestStart": 0.788,
+          "responseStart": 220.047,
+          "responseEnd": 221.441,
+          "duration": 221,
+          "ttfb": 219,
+          "size": 582,
+          "headers": {
+            "cacheControl": "private, max-age=5",
+            "xResponseTime": null
+          }
+        },
+        {
+          "method": "POST",
+          "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+          "status": 200,
+          "requestStart": 0.835,
+          "responseStart": 218.719,
+          "responseEnd": 220.521,
+          "duration": 220,
+          "ttfb": 218,
+          "size": 404,
+          "headers": {
+            "cacheControl": "private, max-age=10, stale-while-revalidate=60",
+            "xResponseTime": null
+          }
+        },
+        {
+          "method": "GET",
+          "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+          "status": 200,
+          "requestStart": 0.939,
+          "responseStart": 459.395,
+          "responseEnd": 460.731,
+          "duration": 460,
+          "ttfb": 458,
+          "size": 3172,
+          "headers": {
+            "cacheControl": "private, max-age=10",
+            "xResponseTime": null
+          }
+        },
+        {
+          "method": "GET",
+          "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+          "status": 200,
+          "requestStart": 1.17,
+          "responseStart": 255.346,
+          "responseEnd": 256.42,
+          "duration": 255,
+          "ttfb": 254,
+          "size": 902,
+          "headers": {
+            "cacheControl": "private, max-age=30",
+            "xResponseTime": null
+          }
+        }
+      ],
+      "consoleIssues": [
+        "[warning] Deprecated API for given entry type.",
+        "[warning] Deprecated API for given entry type."
+      ],
+      "slowestApi": {
+        "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+        "duration": 1507
+      }
+    },
+    "repeatedWork": {
+      "firstLoad": {
+        "duration": 2620,
+        "apiCount": 5,
+        "apis": [
+          {
+            "method": "GET",
+            "url": "/api/datasets",
+            "status": 200,
+            "duration": 212,
+            "size": 582
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "duration": 291,
+            "size": 3172
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "duration": 385,
+            "size": 525
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "duration": 222,
+            "size": 404
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "duration": 238,
+            "size": 902
+          }
+        ]
+      },
+      "reload1": {
+        "duration": 1729,
+        "apiCount": 5,
+        "apis": [
+          {
+            "method": "GET",
+            "url": "/api/datasets",
+            "status": 200,
+            "duration": 2,
+            "size": 582
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "duration": 3,
+            "size": 3172
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "duration": 273,
+            "size": 525
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "duration": 221,
+            "size": 404
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "duration": 3,
+            "size": 902
+          }
+        ]
+      },
+      "navToSources": {
+        "duration": 2009,
+        "apiCount": 1,
+        "apis": [
+          {
+            "method": "GET",
+            "url": "/api/sources",
+            "status": 200,
+            "duration": 286,
+            "size": 14793
+          }
+        ]
+      },
+      "returnToDash": {
+        "duration": 1608,
+        "apiCount": 5,
+        "apis": [
+          {
+            "method": "GET",
+            "url": "/api/datasets",
+            "status": 200,
+            "duration": 265,
+            "size": 582
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "duration": 3,
+            "size": 3172
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "duration": 214,
+            "size": 525
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "duration": 3,
+            "size": 902
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "duration": 245,
+            "size": 404
+          }
+        ]
+      },
+      "reload2": {
+        "duration": 1386,
+        "apiCount": 5,
+        "apis": [
+          {
+            "method": "GET",
+            "url": "/api/datasets",
+            "status": 200,
+            "duration": 10,
+            "size": 582
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "duration": 2,
+            "size": 3172
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "duration": 264,
+            "size": 525
+          },
+          {
+            "method": "GET",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "duration": 4,
+            "size": 902
+          },
+          {
+            "method": "POST",
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "duration": 210,
+            "size": 404
+          }
+        ]
+      }
+    },
+    "apiProbes": {
+      "dsId": null,
+      "dsName": null,
+      "probes": [
+        {
+          "label": "GET /api/datasets",
+          "results": [
+            {
+              "call": 1,
+              "status": 200,
+              "duration": 354,
+              "bodySize": 582
+            },
+            {
+              "call": 2,
+              "status": 200,
+              "duration": 216,
+              "bodySize": 582
+            },
+            {
+              "call": 3,
+              "status": 200,
+              "duration": 222,
+              "bodySize": 582
+            },
+            {
+              "call": 4,
+              "status": 200,
+              "duration": 303,
+              "bodySize": 582
+            }
+          ],
+          "ratio": "1.64"
+        },
+        {
+          "label": "GET /api/sources",
+          "results": [
+            {
+              "call": 1,
+              "status": 200,
+              "duration": 225,
+              "bodySize": 14793
+            },
+            {
+              "call": 2,
+              "status": 200,
+              "duration": 216,
+              "bodySize": 14793
+            },
+            {
+              "call": 3,
+              "status": 200,
+              "duration": 241,
+              "bodySize": 14793
+            },
+            {
+              "call": 4,
+              "status": 200,
+              "duration": 245,
+              "bodySize": 14793
+            }
+          ],
+          "ratio": "1.04"
+        }
+      ]
+    },
+    "allPages": [
+      {
+        "name": "Dashboard (/app)",
+        "url": "https://data-fusion-bi.vercel.app/app",
+        "total": 4583,
+        "navTiming": {
+          "ttfb": 92,
+          "fcp": 716
+        },
+        "apis": [
+          {
+            "url": "/api/datasets",
+            "status": 200,
+            "dur": -2
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "dur": -8
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "dur": -6
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "dur": -23
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "dur": -2
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Data Sources",
+        "url": "https://data-fusion-bi.vercel.app/app/sources",
+        "total": 1666,
+        "navTiming": {
+          "ttfb": 28,
+          "fcp": 412
+        },
+        "apis": [
+          {
+            "url": "/api/sources",
+            "status": 200,
+            "dur": -2
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Data Prep",
+        "url": "https://data-fusion-bi.vercel.app/app/prep",
+        "total": 1521,
+        "navTiming": {
+          "ttfb": 30,
+          "fcp": 404
+        },
+        "apis": [
+          {
+            "url": "/api/sources",
+            "status": 200,
+            "dur": -1
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Insights",
+        "url": "https://data-fusion-bi.vercel.app/app/insights",
+        "total": 1689,
+        "navTiming": {
+          "ttfb": 30,
+          "fcp": 276
+        },
+        "apis": [
+          {
+            "url": "/api/datasets",
+            "status": 200,
+            "dur": -3
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "dur": -1
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "dur": -1
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Reports",
+        "url": "https://data-fusion-bi.vercel.app/app/reports",
+        "total": 1884,
+        "navTiming": {
+          "ttfb": 29,
+          "fcp": 288
+        },
+        "apis": [
+          {
+            "url": "/api/datasets",
+            "status": 200,
+            "dur": -1
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/export",
+            "status": 200,
+            "dur": -6
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Settings",
+        "url": "https://data-fusion-bi.vercel.app/app/settings",
+        "total": 1569,
+        "navTiming": {
+          "ttfb": 32,
+          "fcp": 584
+        },
+        "apis": [],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      },
+      {
+        "name": "Dashboard (return)",
+        "url": "https://data-fusion-bi.vercel.app/app",
+        "total": 1737,
+        "navTiming": {
+          "ttfb": 28,
+          "fcp": 324
+        },
+        "apis": [
+          {
+            "url": "/api/datasets",
+            "status": 200,
+            "dur": -26
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/kpis",
+            "status": 200,
+            "dur": -2
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e",
+            "status": 200,
+            "dur": -2
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/insights",
+            "status": 200,
+            "dur": -1
+          },
+          {
+            "url": "/api/datasets/32f296e0-87af-462c-850b-deeca8d5879e/charts",
+            "status": 200,
+            "dur": -98
+          }
+        ],
+        "consoleIssues": [],
+        "slowestApi": {
+          "dur": 0,
+          "url": "-"
+        }
+      }
+    ],
+    "threejsIsolation": {
+      "withJs": {
+        "total": 1182,
+        "ttfb": 89,
+        "fcp": 376,
+        "lcp": null,
+        "longTaskCount": 0,
+        "longTaskTotal": 0,
+        "scriptCount": 12,
+        "scriptDuration": 768
+      },
+      "withoutJs": {
+        "total": 675,
+        "ttfb": 86
+      },
+      "jsOverhead": 507,
+      "jsOverheadPercent": 43
+    }
+  }
+}
