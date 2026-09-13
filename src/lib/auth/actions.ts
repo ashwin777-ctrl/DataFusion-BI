@@ -119,8 +119,16 @@ export async function loginAction(
   }
 }
 
-/** One-click entry for the local/demo account shown in the public experience. */
+/** One-click entry for the local/demo account shown in the public experience.
+ * ONLY works in development — disabled in production/preview to prevent auth bypass.
+ */
 export async function demoLoginAction(): Promise<void> {
+  // Refuse to auto-authenticate in production environments.
+  if (process.env.NODE_ENV !== "development") {
+    redirect("/login");
+    return;
+  }
+
   try {
     let auth = await authenticate("ashwin@datafusion.io", "Admin@123456");
     if (!auth.ok) {

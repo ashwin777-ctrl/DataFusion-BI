@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   Table as TableIcon,
   AlertCircle,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { DataModelVisualizer } from "@/components/visuals/data-model-visualizer";
 import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
@@ -77,6 +78,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(!clientCache.datasets);
   const [error, setError] = useState<string | null>(null);
 
+  // Model selector: drives which dataset is active
+  // "consolidated" maps to datasets whose name includes "Consolidated"
+  // "housing" maps to datasets whose name includes "Housing"
+  // Falls back to switching between first/second dataset if naming doesn't match
+  const [selectedModel, setSelectedModel] = useState<"consolidated" | "housing">("consolidated");
+
+  // Clear All Data confirmation
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearSuccess, setClearSuccess] = useState(false);
+
   // Active Dimension and Measure selectors for Interactive Visual Builder
   const [selectedDimension, setSelectedDimension] = useState<string>("");
   const [selectedMeasure, setSelectedMeasure] = useState<string>("");
@@ -95,6 +107,34 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [tablePage, setTablePage] = useState(1);
   const [viewMode, setViewMode] = useState<"overview" | "fabric" | "3d">("overview");
+
+  // Resolve which dataset corresponds to the currently selected model
+  const resolveModelDatasetId = useCallback((model: "consolidated" | "housing", datasetList: any[]): string | null => {
+    if (datasetList.length === 0) return null;
+    const keyword = model === "consolidated" ? "consolidated" : "housing";
+    const matched = datasetList.find((d) => d.name?.toLowerCase().includes(keyword));
+    if (matched) return matched.id;
+    // Fallback: consolidated = first dataset, housing = second dataset
+    if (model === "consolidated") return datasetList[0]?.id ?? null;
+    if (model === "housing") return datasetList[1]?.id ?? datasetList[0]?.id ?? null;
+    return datasetList[0]?.id ?? null;
+  }, []);
+
+  // When model toggle changes, switch active dataset
+  const handleModelChange = useCallback((model: "consolidated" | "housing", datasetList: any[]) => {
+    setSelectedModel(model);
+    const newId = resolveModelDatasetId(model, datasetList);
+    if (newId && newId !== activeDatasetId) {
+      setActiveDatasetId(newId);
+      clientCache.activeDatasetId = newId;
+      // Reset chart selections when model changes
+      setChartData(null);
+      setSelectedDimension("");
+      setSelectedMeasure("");
+      setTablePage(1);
+    }
+  }, [activeDatasetId, resolveModelDatasetId]);
+
 
   // 1. Initial Load: Datasets
   useEffect(() => {
@@ -305,33 +345,138 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header: Dataset Switcher + Actions */}
+      {/* Clear All Data Confirmation Modal */}
+      {showClearConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Clear All Data?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              This will permanently remove all datasets and data sources from your workspace, reset the dashboard to its initial empty state, and clear all cached analytics.
+            </p>
+            {clearSuccess && (
+              <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                <span className="font-semibold">✓</span> All data cleared successfully.
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)} disabled={clearing}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={clearing || clearSuccess}
+                onClick={async () => {
+                  try {
+                    setClearing(true);
+                    // Delete all datasets then sources
+                    const dRes = await fetch("/api/datasets", { method: "GET" });
+                    const dData = await dRes.json();
+                    const datasetList: any[] = dData.datasets || [];
+                    await Promise.all(
+                      datasetList.map((d: any) => fetch(`/api/datasets/${d.id}`, { method: "DELETE" }))
+                    );
+                    const sRes = await fetch("/api/sources", { method: "GET" });
+                    const sData = await sRes.json();
+                    const sourceList: any[] = sData.sources || [];
+                    await Promise.all(
+                      sourceList.map((s: any) => fetch(`/api/sources/${s.id}`, { method: "DELETE" }))
+                    );
+                    // Clear client cache
+                    clientCache.datasets = null;
+                    clientCache.sources = null;
+                    clientCache.activeDatasetId = null;
+                    clientCache.details = {};
+                    clientCache.kpis = {};
+                    clientCache.insights = {};
+                    clientCache.charts = {};
+                    // Reset component state
+                    setDatasets([]);
+                    setActiveDatasetId(null);
+                    setDatasetDetail(null);
+                    setKpis([]);
+                    setChartData(null);
+                    setSelectedDimension("");
+                    setSelectedMeasure("");
+                    setTablePage(1);
+                    setClearSuccess(true);
+                    setTimeout(() => {
+                      setShowClearConfirm(false);
+                      setClearSuccess(false);
+                    }, 1800);
+                  } catch {
+                    setError("Failed to clear data. Please try again.");
+                    setShowClearConfirm(false);
+                  } finally {
+                    setClearing(false);
+                  }
+                }}
+                className="gap-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {clearing ? "Clearing..." : "Clear All Data"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Header: Model Toggle + Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <select
-              aria-label="Select active dataset"
-              value={activeDatasetId || ""}
-              onChange={(e) => setActiveDatasetId(e.target.value)}
-              className="rounded-lg border border-input bg-card px-3 py-1.5 text-base font-bold text-foreground focus:ring-2 focus:ring-accent"
-            >
-              {datasets.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-            <Badge variant="outline" className="text-xs">
+          {/* Model Selector Toggle — Consolidated ↔ Housing */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-black/[0.04] dark:bg-white/[0.06] p-1 shadow-inner">
+              <button
+                type="button"
+                id="model-toggle-consolidated"
+                onClick={() => handleModelChange("consolidated", datasets)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                  selectedModel === "consolidated"
+                    ? "bg-white dark:bg-white/15 text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.06)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Consolidated Analytics Model
+              </button>
+              <button
+                type="button"
+                id="model-toggle-housing"
+                onClick={() => handleModelChange("housing", datasets)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                  selectedModel === "housing"
+                    ? "bg-white dark:bg-white/15 text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.06)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Housing Model
+              </button>
+            </div>
+            <Badge variant="outline" className="text-xs font-mono">
               {profile?.rowCount ? `${profile.rowCount.toLocaleString()} rows` : "Ready"}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Dynamic analytical model verified by embedded DuckDB engine.
+          <p className="text-xs text-muted-foreground mt-1.5 pl-1">
+            {selectedModel === "consolidated"
+              ? "Consolidated multi-source analytical model · DuckDB vectorized engine"
+              : "Housing dataset model · PostgreSQL-sourced schema"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Apple Segmented Capsule Switcher */}
+          {/* View Mode Switcher */}
           <div className="flex items-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.04] dark:bg-white/[0.06] p-1 text-xs shadow-inner">
             <button
               type="button"
@@ -342,7 +487,7 @@ export default function DashboardPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Executive Overview
+              Overview
             </button>
             <button
               type="button"
@@ -353,7 +498,7 @@ export default function DashboardPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Data Fabric Mesh
+              Data Fabric
             </button>
             <button
               type="button"
@@ -365,7 +510,7 @@ export default function DashboardPage() {
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>Data Model</span>
+              <span>Model</span>
             </button>
           </div>
 
@@ -383,6 +528,16 @@ export default function DashboardPage() {
             </Button>
           </Link>
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowClearConfirm(true)}
+            className="gap-1.5 rounded-full text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Clear Data
+          </Button>
+
           <Link href="/app/sources">
             <Button variant="primary" size="sm" className="gap-1.5 rounded-full text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-[0_2px_8px_rgba(0,113,227,0.3)]">
               <Plus className="h-3.5 w-3.5" />
@@ -398,6 +553,8 @@ export default function DashboardPage() {
           <span>{error}</span>
         </div>
       )}
+
+
 
       {/* Render View Depending on Perspective */}
       {viewMode === "3d" ? (

@@ -46,8 +46,6 @@ export default function SourcesPage() {
 
   // PostgreSQL Modal state with sensible defaults for the dev cluster
   const [showPgModal, setShowPgModal] = useState(false);
-  const [pgInputMode, setPgInputMode] = useState<"fields" | "uri">("fields");
-  const [pgUri, setPgUri] = useState("postgres://bi_app:bi_app_pw@127.0.0.1:5434/bi_platform");
   const [pgHost, setPgHost] = useState("127.0.0.1");
   const [pgPort, setPgPort] = useState("5434");
   const [pgDatabase, setPgDatabase] = useState("bi_platform");
@@ -64,7 +62,6 @@ export default function SourcesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function applyPgUri(raw: string) {
-    setPgUri(raw);
     if (!raw.trim()) return;
     try {
       let trimmed = raw.trim();
@@ -104,7 +101,6 @@ export default function SourcesPage() {
       setPgUser("bi_app");
       setPgPassword("bi_app_pw");
       setPgSsl(false);
-      setPgUri("postgres://bi_app:bi_app_pw@127.0.0.1:5434/bi_platform");
     } else if (preset === "local") {
       setPgHost("127.0.0.1");
       setPgPort("5432");
@@ -112,7 +108,6 @@ export default function SourcesPage() {
       setPgUser("postgres");
       setPgPassword("");
       setPgSsl(false);
-      setPgUri("postgres://postgres@127.0.0.1:5432/postgres");
     } else if (preset === "cloud") {
       setPgHost("");
       setPgPort("5432");
@@ -120,7 +115,6 @@ export default function SourcesPage() {
       setPgUser("postgres");
       setPgPassword("");
       setPgSsl(true);
-      setPgUri("");
     }
   }
 
@@ -236,42 +230,13 @@ export default function SourcesPage() {
     }
   }
 
-  function resolveEffectivePgConfig(): { error?: string; config?: { connectionString?: string; host: string; port: number; database: string; user: string; password: string; ssl: boolean } } {
+  function resolveEffectivePgConfig(): { error?: string; config?: { host: string; port: number; database: string; user: string; password: string; ssl: boolean } } {
     let host = pgHost.trim();
     let port = Number(pgPort) || 5434;
-    let database = pgDatabase.trim();
-    let user = pgUser.trim();
-    let password = pgPassword;
-    let ssl = pgSsl;
-
-    if (pgInputMode === "uri" || (pgUri.trim() && !host)) {
-      const uri = pgUri.trim();
-      if (!uri) {
-        return { error: "Please enter your PostgreSQL connection URI (e.g. postgres://user:password@host:port/dbname)." };
-      }
-      try {
-        let trimmed = uri;
-        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-          trimmed = trimmed.slice(1, -1).trim();
-        }
-        if (!trimmed.startsWith("postgres://") && !trimmed.startsWith("postgresql://")) {
-          trimmed = "postgres://" + trimmed;
-        }
-        const u = new URL(trimmed);
-        if (u.hostname) host = u.hostname;
-        if (u.port) port = Number(u.port);
-        const db = u.pathname.replace(/^\//, "");
-        if (db) database = decodeURIComponent(db);
-        if (u.username) user = decodeURIComponent(u.username);
-        if (u.password) password = decodeURIComponent(u.password);
-        const sslMode = u.searchParams.get("sslmode");
-        if (sslMode) {
-          ssl = sslMode !== "disable";
-        }
-      } catch {
-        return { error: "Could not parse PostgreSQL connection URI. Please verify the URL format." };
-      }
-    }
+    const database = pgDatabase.trim();
+    const user = pgUser.trim();
+    const password = pgPassword;
+    const ssl = pgSsl;
 
     // Auto-split host:port if user entered host as "127.0.0.1:5434"
     if (host.includes(":") && !host.includes("[")) {
@@ -294,7 +259,6 @@ export default function SourcesPage() {
 
     return {
       config: {
-        connectionString: pgInputMode === "uri" ? pgUri.trim() : undefined,
         host,
         port,
         database,
@@ -685,54 +649,8 @@ export default function SourcesPage() {
               </button>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex border-b border-border text-xs font-medium gap-2">
-              <button
-                type="button"
-                onClick={() => setPgInputMode("fields")}
-                className={`pb-2 px-3 border-b-2 transition-colors ${
-                  pgInputMode === "fields"
-                    ? "border-cyan-500 text-cyan-400 font-semibold"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Individual Fields
-              </button>
-              <button
-                type="button"
-                onClick={() => setPgInputMode("uri")}
-                className={`pb-2 px-3 border-b-2 transition-colors ${
-                  pgInputMode === "uri"
-                    ? "border-cyan-500 text-cyan-400 font-semibold"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Connection String (URI)
-              </button>
-            </div>
-
-            {/* Connection String Mode */}
-            {pgInputMode === "uri" && (
-              <div className="space-y-2 text-xs">
-                <label htmlFor="pgUri" className="font-medium text-foreground block">
-                  PostgreSQL Connection URI
-                </label>
-                <textarea
-                  id="pgUri"
-                  rows={3}
-                  value={pgUri}
-                  onChange={(e) => applyPgUri(e.target.value)}
-                  placeholder="postgresql://user:password@aws-0.pooler.supabase.com:6543/postgres?sslmode=require"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono resize-none focus:border-cyan-500 focus:outline-none"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Paste your connection URL from Supabase, Neon, AWS RDS, or Docker. It automatically populates the host, port, credentials, and SSL settings.
-                </p>
-              </div>
-            )}
-
-            {/* Fields Mode */}
-            <div className={`grid grid-cols-2 gap-3 text-xs ${pgInputMode === "uri" ? "opacity-75 pt-1 border-t border-border" : ""}`}>
+            {/* Connection Fields */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label htmlFor="pgHost" className="font-medium text-foreground">

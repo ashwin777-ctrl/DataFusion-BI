@@ -4,17 +4,12 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { loginAction } from "@/lib/auth/actions";
 import { EMPTY_FORM_STATE } from "@/lib/auth/form-state";
-import { ArrowRight, Sparkles, Shield } from "lucide-react";
+import { ArrowRight, Shield } from "lucide-react";
 
 export function InlineSignIn() {
   const [state, formAction, pending] = useActionState(loginAction, EMPTY_FORM_STATE);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleFillDemo = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-  };
 
   return (
     <div id="inline-signin-card" className="relative w-full max-w-md mx-auto rounded-2xl border border-white/15 bg-[#0a0a0a]/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl text-left">
@@ -37,25 +32,6 @@ export function InlineSignIn() {
         <p className="text-xs text-zinc-400 mt-1">
           Access your real-time analytics dashboard, DuckDB pipelines, and 3D data graph.
         </p>
-      </div>
-
-      {/* Quick 1-Click Demo Fill */}
-      <div className="mb-5 p-3 rounded-xl bg-[#121212] border border-white/10 flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-zinc-400 font-medium flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-white" /> Quick Demo Login:
-          </span>
-          <span className="text-[10px] font-mono text-emerald-400 font-semibold">Active User</span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleFillDemo("ashwin@datafusion.io", "Password123!")}
-            className="flex-1 py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-[11px] font-mono font-medium transition-colors border border-white/10 text-center"
-          >
-            ashwin@datafusion.io
-          </button>
-        </div>
       </div>
 
       {/* Embedded Working Form */}

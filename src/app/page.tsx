@@ -3,11 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { InlineSignIn } from "@/components/auth/inline-sign-in";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  CheckCircle2,
   Lock,
   Terminal,
 } from "lucide-react";
@@ -82,11 +80,11 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeSwitcher />
-            <a href="#signin" className="hidden sm:inline-flex">
+            <Link href="/login" className="hidden sm:inline-flex">
               <Button variant="ghost" size="sm" className="text-xs font-medium rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white">
                 Sign In
               </Button>
-            </a>
+            </Link>
             <Link href="/login">
               <Button size="sm" className="gap-1.5 text-xs font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-[0_2px_8px_rgba(0,113,227,0.3)] px-3.5 sm:px-4">
                 <span className="hidden sm:inline">Open Portal</span>
@@ -126,17 +124,17 @@ export default function LandingPage() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <a href="#signin">
+                  <Link href="/login">
                     <Button size="md" className="h-11 px-6 gap-2 font-medium bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-[0_4px_14px_rgba(0,113,227,0.35)]">
                       <span>Launch Workspace</span>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
-                  </a>
+                  </Link>
 
                   <Link href="/login">
                     <Button variant="secondary" size="md" className="h-11 px-5 gap-2 font-medium rounded-full border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white dark:bg-[#1C1C1E]">
                       <Terminal className="h-4 w-4 text-[#86868B]" />
-                      <span>Dedicated Login</span>
+                      <span>Sign In to Portal</span>
                     </Button>
                   </Link>
                 </div>
@@ -318,13 +316,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 9. SIGN IN SECTION INSIDE THE WEBPAGE */}
+        {/* 9. SECURE GATEWAY — directs to dedicated login */}
         <section id="signin" className="px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl p-8 sm:p-12 rounded-[28px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              
-              {/* Left Column: Access Information */}
-              <div className="lg:col-span-6 space-y-5">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
+              <div className="max-w-xl space-y-5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0071E3]/10 text-xs font-mono text-[#0071E3] dark:text-[#0A84FF]">
                   <Lock className="w-3.5 h-3.5" />
                   <span>SECURE GATEWAY ACCESS</span>
@@ -333,40 +329,25 @@ export default function LandingPage() {
                   Access Your Organization Workspace
                 </h2>
                 <p className="text-sm sm:text-base text-[#86868B] leading-relaxed">
-                  Authenticate directly from this page to access your live analytics dashboard. 
-                  All queries execute inside your cryptographically isolated PostgreSQL 16 tenant partition with automated session management.
+                  Sign in securely through the DataFusion BI Portal. Your credentials are validated
+                  server-side against your cryptographically isolated PostgreSQL 16 tenant partition.
+                  HTTP-only session cookies are issued on successful authentication — never stored client-side.
                 </p>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
-                    <span>Instant access with pre-configured demo account</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
-                    <span>Real-time DuckDB OLAP cluster telemetry & SQL profiler</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    <CheckCircle2 className="h-4 w-4 text-[#34C759] shrink-0" />
-                    <span>Seamless session token persistence with HTTP-only cookies</span>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center gap-4">
-                  <Link href="/login">
-                    <Button variant="outline" className="gap-2 rounded-full text-xs font-medium border-[#E5E5EA] dark:border-[#2C2C2E]">
-                      <span>Prefer Dedicated Login Page?</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </Link>
-                </div>
+                <ul className="space-y-2 text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  <li className="flex items-center gap-2"><span className="text-[#34C759]">✓</span> Server-side credential validation with bcrypt hashing</li>
+                  <li className="flex items-center gap-2"><span className="text-[#34C759]">✓</span> HTTP-only Secure session cookies — not readable by JavaScript</li>
+                  <li className="flex items-center gap-2"><span className="text-[#34C759]">✓</span> PostgreSQL Row-Level Security enforced on every data request</li>
+                  <li className="flex items-center gap-2"><span className="text-[#34C759]">✓</span> Middleware guards all /app routes before any rendering</li>
+                </ul>
               </div>
-
-              {/* Right Column: Embedded Interactive Sign In Module */}
-              <div className="lg:col-span-6 flex justify-center">
-                <InlineSignIn />
+              <div className="shrink-0">
+                <Link href="/login">
+                  <Button size="md" className="h-12 px-8 gap-2 font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full shadow-[0_4px_14px_rgba(0,113,227,0.35)] text-base">
+                    <span>Open Secure Login Portal</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
-
             </div>
           </div>
         </section>
@@ -470,8 +451,8 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6 text-xs text-[#86868B]">
-            <a href="#signin" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Sign In</a>
-            <Link href="/login" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Login Page</Link>
+            <Link href="/login" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Sign In</Link>
+            <Link href="/login" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Login Portal</Link>
             <Link href="/signup" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Register</Link>
             <a href="#overview" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Back to Top</a>
           </div>
