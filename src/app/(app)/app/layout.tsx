@@ -12,7 +12,7 @@ export default async function AppShellLayout({
 }) {
   const { session, orgId } = await requireOrg();
   return (
-    <div className="bg-slate-950 text-slate-100 flex min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex min-h-screen antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <AppHeader
