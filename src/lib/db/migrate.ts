@@ -82,7 +82,21 @@ function policyExprs(table: string): { using: string; check: string } {
 }
 
 async function main() {
-  const pool = new Pool({ connectionString: OWNER_URL, max: 1 });
+  const isRemoteOrSsl = Boolean(
+    OWNER_URL.includes("supabase") ||
+    OWNER_URL.includes("sslmode") ||
+    OWNER_URL.includes("neon.tech") ||
+    (!OWNER_URL.includes("localhost") && !OWNER_URL.includes("127.0.0.1"))
+  );
+  const cleanUrl = isRemoteOrSsl
+    ? OWNER_URL.replace(/[?&]sslmode=[^&]+/g, "").replace(/\?$/, "")
+    : OWNER_URL;
+
+  const pool = new Pool({
+    connectionString: cleanUrl,
+    ssl: isRemoteOrSsl ? { rejectUnauthorized: false } : undefined,
+    max: 1,
+  });
   const db = drizzle(pool);
 
   console.log("→ Applying Drizzle migrations…");
