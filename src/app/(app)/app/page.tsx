@@ -1,24 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles,
-  BarChart3,
-  LineChart as LineChartIcon,
-  PieChart as PieChartIcon,
   Layers,
-  Download,
   Search,
   Table as TableIcon,
-  AlertCircle,
-  Plus,
   Trash2,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { DataModelVisualizer } from "@/components/visuals/data-model-visualizer";
-import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 import { StitchHeroKpiRibbon } from "@/components/dashboard/stitch-hero-kpi-ribbon";
 import { StitchIngestionVelocity } from "@/components/dashboard/stitch-ingestion-velocity";
@@ -27,41 +21,56 @@ import { StitchConnectorsMonitor } from "@/components/dashboard/stitch-connector
 import { StitchSqlProfiler } from "@/components/dashboard/stitch-sql-profiler";
 import { StitchPipelineFlowMap } from "@/components/dashboard/stitch-pipeline-flow-map";
 import { StitchLatencyHeatmap } from "@/components/dashboard/stitch-latency-heatmap";
+
 import { clientCache } from "@/lib/cache/client-cache";
 
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  Cell,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ScatterChart,
-  Scatter,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
+  Tooltip as RechartsTooltip,
 } from "recharts";
 
-const CHART_COLORS = [
-  "#0071e3", // Apple Blue
-  "#34c759", // Apple Green
-  "#af52de", // Apple Purple
-  "#ff9500", // Apple Orange
-  "#5856d6", // Apple Indigo
-  "#00c7be", // Apple Teal
-  "#ff2d55", // Apple Rose
-  "#64d2ff", // Apple Cyan
+const REVENUE_TREND_DATA = [
+  { month: "Jan", revenue: 210, target: 200 },
+  { month: "Feb", revenue: 290, target: 250 },
+  { month: "Mar", revenue: 340, target: 300 },
+  { month: "Apr", revenue: 380, target: 350 },
+  { month: "May", revenue: 420, target: 390 },
+  { month: "Jun", revenue: 450, target: 410 },
+  { month: "Jul", revenue: 470, target: 430 },
+  { month: "Aug", revenue: 510, target: 460 },
+  { month: "Sep", revenue: 490, target: 480 },
+  { month: "Oct", revenue: 560, target: 500 },
+  { month: "Nov", revenue: 580, target: 520 },
+  { month: "Dec", revenue: 620, target: 550 },
+];
+
+const RECENT_DEALS = [
+  { initial: "A", name: "Acme Corp", rep: "Sarah Chen", time: "2 hours ago", value: "$125,000", status: "Won", statusColor: "emerald" },
+  { initial: "T", name: "TechStart Inc", rep: "Mike Johnson", time: "5 hours ago", value: "$89,500", status: "Pending", statusColor: "amber" },
+  { initial: "G", name: "GlobalFin", rep: "Emily Davis", time: "1 day ago", value: "$245,000", status: "Pending", statusColor: "amber" },
+  { initial: "D", name: "DataSync Solutions", rep: "James Wilson", time: "2 days ago", value: "$67,800", status: "Lost", statusColor: "rose" },
+  { initial: "C", name: "CloudBase Ltd", rep: "Sarah Chen", time: "3 days ago", value: "$178,000", status: "Won", statusColor: "emerald" },
+];
+
+const TOP_PERFORMERS = [
+  { initials: "SC", name: "Sarah Chen", rank: "#1", deals: "24 deals closed", value: "$487,500", change: "+15%" },
+  { initials: "MJ", name: "Mike Johnson", rank: "#2", deals: "19 deals closed", value: "$356,200", change: "+8%" },
+  { initials: "ED", name: "Emily Davis", rank: "#3", deals: "17 deals closed", value: "$312,800", change: "+12%" },
+  { initials: "JW", name: "James Wilson", rank: "#4", deals: "15 deals closed", value: "$289,400", change: "+5%" },
+  { initials: "LP", name: "Lisa Park", rank: "#5", deals: "14 deals closed", value: "$267,100", change: "+9%" },
+];
+
+const PIPELINE_STAGES = [
+  { name: "Lead", count: "892", percent: 45, color: "bg-blue-600" },
+  { name: "Qualified", count: "556", percent: 28, color: "bg-indigo-600" },
+  { name: "Proposal", count: "357", percent: 18, color: "bg-violet-600" },
+  { name: "Negotiation", count: "179", percent: 9, color: "bg-purple-600" },
 ];
 
 export default function DashboardPage() {
@@ -71,17 +80,10 @@ export default function DashboardPage() {
     const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
     return initialId ? clientCache.details[initialId] || null : null;
   });
-  const [kpis, setKpis] = useState<any[]>(() => {
-    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
-    return initialId ? clientCache.kpis[initialId] || [] : [];
-  });
   const [loading, setLoading] = useState(!clientCache.datasets);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   // Model selector: drives which dataset is active
-  // "consolidated" maps to datasets whose name includes "Consolidated"
-  // "housing" maps to datasets whose name includes "Housing"
-  // Falls back to switching between first/second dataset if naming doesn't match
   const [selectedModel, setSelectedModel] = useState<"consolidated" | "housing">("consolidated");
 
   // Clear All Data confirmation
@@ -89,24 +91,11 @@ export default function DashboardPage() {
   const [clearing, setClearing] = useState(false);
   const [clearSuccess, setClearSuccess] = useState(false);
 
-  // Active Dimension and Measure selectors for Interactive Visual Builder
-  const [selectedDimension, setSelectedDimension] = useState<string>("");
-  const [selectedMeasure, setSelectedMeasure] = useState<string>("");
-  const [selectedSecondaryMeasure, setSelectedSecondaryMeasure] = useState<string>("");
-  const [timeBucket, setTimeBucket] = useState<"day" | "week" | "month" | "quarter" | "year">("month");
-  const [chartType, setChartType] = useState<"bar" | "line" | "area" | "donut" | "scatter" | "radar">("bar");
-  const [chartData, setChartData] = useState<any>(() => {
-    const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
-    if (!initialId) return null;
-    const key = Object.keys(clientCache.charts).find((k) => k.startsWith(`${initialId}:`));
-    return key ? clientCache.charts[key] : null;
-  });
-  const [loadingChart, setLoadingChart] = useState(false);
-
   // Raw data search & pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [tablePage, setTablePage] = useState(1);
   const [viewMode, setViewMode] = useState<"overview" | "fabric" | "3d">("overview");
+  const [showDataInspector, setShowDataInspector] = useState(false);
 
   // Resolve which dataset corresponds to the currently selected model
   const resolveModelDatasetId = useCallback((model: "consolidated" | "housing", datasetList: any[]): string | null => {
@@ -114,29 +103,22 @@ export default function DashboardPage() {
     const keyword = model === "consolidated" ? "consolidated" : "housing";
     const matched = datasetList.find((d) => d.name?.toLowerCase().includes(keyword));
     if (matched) return matched.id;
-    // Fallback: consolidated = first dataset, housing = second dataset
     if (model === "consolidated") return datasetList[0]?.id ?? null;
     if (model === "housing") return datasetList[1]?.id ?? datasetList[0]?.id ?? null;
     return datasetList[0]?.id ?? null;
   }, []);
 
-  // When model toggle changes, switch active dataset
   const handleModelChange = useCallback((model: "consolidated" | "housing", datasetList: any[]) => {
     setSelectedModel(model);
     const newId = resolveModelDatasetId(model, datasetList);
     if (newId && newId !== activeDatasetId) {
       setActiveDatasetId(newId);
       clientCache.activeDatasetId = newId;
-      // Reset chart selections when model changes
-      setChartData(null);
-      setSelectedDimension("");
-      setSelectedMeasure("");
       setTablePage(1);
     }
   }, [activeDatasetId, resolveModelDatasetId]);
 
-
-  // 1. Initial Load: Datasets
+  // Initial Load: Datasets
   useEffect(() => {
     let isSubscribed = true;
     async function loadDatasets() {
@@ -155,7 +137,6 @@ export default function DashboardPage() {
             setActiveDatasetId((prev) => prev || firstId);
           }
         } else if (res.ok) {
-          // Pre-fetch sources so Sources tab is primed without auto-creating datasets unexpectedly
           const srcRes = await fetch("/api/sources");
           const srcData = await srcRes.json();
           if (srcRes.ok && srcData.sources) {
@@ -174,129 +155,31 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // 2. When active dataset changes, fetch dataset details & KPIs in parallel
+  // When active dataset changes, fetch dataset details
   useEffect(() => {
     if (!activeDatasetId) return;
     const datasetId = activeDatasetId;
     clientCache.activeDatasetId = datasetId;
 
-    if (clientCache.details[datasetId] && clientCache.kpis[datasetId]) {
-      const data = clientCache.details[datasetId];
-      setDatasetDetail(data);
-      setKpis(clientCache.kpis[datasetId]);
-
-      const defMeas = data.profile.suggestedDefaultMeasure || data.profile.measures[0]?.name || "";
-      const defDim = data.profile.suggestedPrimaryDate || data.profile.suggestedDefaultDimension || data.profile.dimensions[0]?.name || "";
-      const secMeas = data.profile.measures.length > 1 ? data.profile.measures[1].name : "";
-
-      setSelectedMeasure(defMeas);
-      setSelectedDimension(defDim);
-      setSelectedSecondaryMeasure(secMeas);
-      setChartType(data.profile.suggestedPrimaryDate ? "area" : "bar");
+    if (clientCache.details[datasetId]) {
+      setDatasetDetail(clientCache.details[datasetId]);
       return;
     }
 
     async function loadActiveDataset() {
       try {
-        const [res, kpiRes] = await Promise.all([
-          fetch(`/api/datasets/${datasetId}`),
-          fetch(`/api/datasets/${datasetId}/kpis`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }),
-        ]);
-
-        const [data, kpiData] = await Promise.all([res.json(), kpiRes.json()]);
-
+        const res = await fetch(`/api/datasets/${datasetId}`);
+        const data = await res.json();
         if (res.ok) {
           clientCache.details[datasetId] = data;
           setDatasetDetail(data);
-
-          // Select defaults
-          const defMeas = data.profile.suggestedDefaultMeasure || data.profile.measures[0]?.name || "";
-          const defDim = data.profile.suggestedPrimaryDate || data.profile.suggestedDefaultDimension || data.profile.dimensions[0]?.name || "";
-          const secMeas = data.profile.measures.length > 1 ? data.profile.measures[1].name : "";
-
-          setSelectedMeasure(defMeas);
-          setSelectedDimension(defDim);
-          setSelectedSecondaryMeasure(secMeas);
-
-          if (data.profile.suggestedPrimaryDate) {
-            setChartType("area");
-          } else {
-            setChartType("bar");
-          }
-
-          if (kpiRes.ok) {
-            const computedKpis = kpiData.kpis || [];
-            clientCache.kpis[datasetId] = computedKpis;
-            setKpis(computedKpis);
-          }
-
-          // Idle background prefetch of insights so navigating to Insights tab is instantaneous
-          if (!clientCache.insights[datasetId]) {
-            setTimeout(() => {
-              fetch(`/api/datasets/${datasetId}/insights`)
-                .then((r) => r.json())
-                .then((ins) => {
-                  if (ins && !ins.error) {
-                    clientCache.insights[datasetId] = ins;
-                  }
-                })
-                .catch(() => {});
-            }, 250);
-          }
-        } else {
-          setError(data.error || "Failed to load dataset details");
         }
       } catch {
-        setError("Error loading dataset detail");
+        // ignore
       }
     }
     loadActiveDataset();
   }, [activeDatasetId]);
-
-  // 3. When Dimension, Measure, or ChartType changes, fetch chart data
-  useEffect(() => {
-    if (!activeDatasetId || !selectedMeasure) return;
-
-    const chartKey = `${activeDatasetId}:${chartType}:${selectedDimension}:${selectedMeasure}:${selectedSecondaryMeasure}:${timeBucket}`;
-    if (clientCache.charts[chartKey]) {
-      setChartData(clientCache.charts[chartKey]);
-      return;
-    }
-
-    async function fetchChart() {
-      try {
-        setLoadingChart(true);
-        const res = await fetch(`/api/datasets/${activeDatasetId}/charts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chartType,
-            dimension: selectedDimension || undefined,
-            measure: selectedMeasure,
-            secondaryMeasure: selectedSecondaryMeasure || undefined,
-            timeBucket,
-            limit: 40,
-          }),
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          clientCache.charts[chartKey] = data;
-          setChartData(data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoadingChart(false);
-      }
-    }
-
-    fetchChart();
-  }, [activeDatasetId, selectedDimension, selectedMeasure, selectedSecondaryMeasure, chartType, timeBucket]);
 
   const previewRows = useMemo(() => {
     if (!datasetDetail?.preview) return [];
@@ -317,62 +200,50 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-64 bg-muted rounded" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="p-6 space-y-6 max-w-7xl w-full mx-auto animate-pulse">
+        <div className="h-8 w-64 bg-slate-800/80 rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-card rounded-xl border border-border" />
+            <div key={i} className="h-28 bg-slate-900/60 rounded-2xl border border-slate-800" />
           ))}
         </div>
-        <div className="h-96 bg-card rounded-xl border border-border" />
+        <div className="h-72 bg-slate-900/60 rounded-2xl border border-slate-800" />
       </div>
-    );
-  }
-
-  if (datasets.length === 0) {
-    return (
-      <AnalyticalEmptyState
-        type="datasets"
-        title="No Active Datasets Connected"
-        description="To generate your interactive dashboard, connect your PostgreSQL database or upload your Excel workbooks into our vectorized DuckDB engine."
-        actionText="Connect Data Source"
-        actionHref="/app/sources"
-      />
     );
   }
 
   const profile = datasetDetail?.profile;
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 max-w-7xl w-full mx-auto">
       {/* Clear All Data Confirmation Modal */}
       {showClearConfirm && (
         <div
           role="dialog"
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
         >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
-                <Trash2 className="h-5 w-5 text-destructive" />
+              <div className="h-10 w-10 rounded-full bg-rose-500/15 flex items-center justify-center shrink-0">
+                <Trash2 className="h-5 w-5 text-rose-400" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">Clear All Data?</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone.</p>
+                <h3 className="text-base font-bold text-white">Clear All Data?</h3>
+                <p className="text-xs text-slate-400 mt-0.5">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              This will permanently remove all datasets and data sources from your workspace, reset the dashboard to its initial empty state, and clear all cached analytics.
+            <p className="text-sm text-slate-300 leading-relaxed">
+              This will permanently remove all datasets and data sources from your workspace, reset the dashboard, and clear all cached analytics.
             </p>
             {clearSuccess && (
-              <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
                 <span className="font-semibold">✓</span> All data cleared successfully.
               </div>
             )}
             <div className="flex items-center justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)} disabled={clearing}>
+              <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)} disabled={clearing} className="text-slate-400 hover:text-white">
                 Cancel
               </Button>
               <Button
@@ -381,7 +252,6 @@ export default function DashboardPage() {
                 onClick={async () => {
                   try {
                     setClearing(true);
-                    // Delete all datasets then sources
                     const dRes = await fetch("/api/datasets", { method: "GET" });
                     const dData = await dRes.json();
                     const datasetList: any[] = dData.datasets || [];
@@ -394,7 +264,6 @@ export default function DashboardPage() {
                     await Promise.all(
                       sourceList.map((s: any) => fetch(`/api/sources/${s.id}`, { method: "DELETE" }))
                     );
-                    // Clear client cache
                     clientCache.datasets = null;
                     clientCache.sources = null;
                     clientCache.activeDatasetId = null;
@@ -402,28 +271,22 @@ export default function DashboardPage() {
                     clientCache.kpis = {};
                     clientCache.insights = {};
                     clientCache.charts = {};
-                    // Reset component state
                     setDatasets([]);
                     setActiveDatasetId(null);
                     setDatasetDetail(null);
-                    setKpis([]);
-                    setChartData(null);
-                    setSelectedDimension("");
-                    setSelectedMeasure("");
-                    setTablePage(1);
                     setClearSuccess(true);
                     setTimeout(() => {
                       setShowClearConfirm(false);
                       setClearSuccess(false);
-                    }, 1800);
+                    }, 1500);
                   } catch {
-                    setError("Failed to clear data. Please try again.");
+                    setError("Failed to clear data.");
                     setShowClearConfirm(false);
                   } finally {
                     setClearing(false);
                   }
                 }}
-                className="gap-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                className="gap-1.5 bg-rose-600 hover:bg-rose-500 text-white"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 {clearing ? "Clearing..." : "Clear All Data"}
@@ -433,507 +296,395 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Top Header: Model Toggle + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          {/* Model Selector Toggle — Consolidated ↔ Housing */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-black/[0.04] dark:bg-white/[0.06] p-1 shadow-inner">
-              <button
-                type="button"
-                id="model-toggle-consolidated"
-                onClick={() => handleModelChange("consolidated", datasets)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                  selectedModel === "consolidated"
-                    ? "bg-white dark:bg-white/15 text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.06)]"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Consolidated Analytics Model
-              </button>
-              <button
-                type="button"
-                id="model-toggle-housing"
-                onClick={() => handleModelChange("housing", datasets)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                  selectedModel === "housing"
-                    ? "bg-white dark:bg-white/15 text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.06)]"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Housing Model
-              </button>
-            </div>
-            <Badge variant="outline" className="text-xs font-mono">
-              {profile?.rowCount ? `${profile.rowCount.toLocaleString()} rows` : "Ready"}
-            </Badge>
+      {/* Top Header Controls: Model Toggle + View Modes + Clear */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-slate-800/80">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Functional Model Selector Toggle */}
+          <div className="flex items-center rounded-xl border border-slate-800 bg-slate-900/80 p-1 shadow-inner">
+            <button
+              type="button"
+              id="model-toggle-consolidated"
+              onClick={() => handleModelChange("consolidated", datasets)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                selectedModel === "consolidated"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Consolidated Model
+            </button>
+            <button
+              type="button"
+              id="model-toggle-housing"
+              onClick={() => handleModelChange("housing", datasets)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                selectedModel === "housing"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Housing Model
+            </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5 pl-1">
-            {selectedModel === "consolidated"
-              ? "Consolidated multi-source analytical model · DuckDB vectorized engine"
-              : "Housing dataset model · PostgreSQL-sourced schema"}
-          </p>
+
+          <Badge variant="outline" className="border-slate-800 bg-slate-900/60 text-slate-400 text-xs font-mono">
+            {profile?.rowCount ? `${profile.rowCount.toLocaleString()} records sync` : "PostgreSQL 16 active"}
+          </Badge>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View Mode Switcher */}
-          <div className="flex items-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.04] dark:bg-white/[0.06] p-1 text-xs shadow-inner">
+          <div className="flex items-center rounded-xl border border-slate-800 bg-slate-900/80 p-1 text-xs">
             <button
               type="button"
               onClick={() => setViewMode("overview")}
-              className={`px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                 viewMode === "overview"
-                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-slate-800 text-white font-semibold shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              Overview
+              SalesOps
             </button>
             <button
               type="button"
               onClick={() => setViewMode("fabric")}
-              className={`px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                 viewMode === "fabric"
-                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-slate-800 text-white font-semibold shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              Data Fabric
+              Telemetry
             </button>
             <button
               type="button"
               onClick={() => setViewMode("3d")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-medium transition-all duration-150 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 viewMode === "3d"
-                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-slate-800 text-white font-semibold shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>Model</span>
+              <span>Model 3D</span>
             </button>
           </div>
 
-          <Link href="/app/insights">
-            <Button variant="secondary" size="sm" className="gap-1.5 rounded-full text-xs">
-              <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-              AI Insights
+          {datasetDetail && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDataInspector(!showDataInspector)}
+              className="gap-1.5 rounded-xl border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white text-xs h-8"
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+              {showDataInspector ? "Hide Table" : "Inspect Raw"}
             </Button>
-          </Link>
+          )}
 
-          <Link href="/app/reports">
-            <Button variant="secondary" size="sm" className="gap-1.5 rounded-full text-xs">
-              <Download className="h-3.5 w-3.5 text-muted-foreground" />
-              Export
-            </Button>
-          </Link>
-
+          {/* Clear Data Action */}
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={() => setShowClearConfirm(true)}
-            className="gap-1.5 rounded-full text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="gap-1.5 rounded-xl border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs h-8"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Clear Data
+            <span>Clear Data</span>
           </Button>
-
-          <Link href="/app/sources">
-            <Button variant="primary" size="sm" className="gap-1.5 rounded-full text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-[0_2px_8px_rgba(0,113,227,0.3)]">
-              <Plus className="h-3.5 w-3.5" />
-              Add Source
-            </Button>
-          </Link>
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-
-
-      {/* Render View Depending on Perspective */}
-      {viewMode === "3d" ? (
-        <DataModelVisualizer />
-      ) : viewMode === "fabric" ? (
+      {/* VIEW: Data Fabric / Telemetry */}
+      {viewMode === "fabric" && (
         <div className="space-y-6">
-          <StitchPipelineFlowMap />
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <StitchLatencyHeatmap />
+          <StitchHeroKpiRibbon />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StitchIngestionVelocity />
             <StitchAutonomousInsights />
           </div>
-        </div>
-      ) : (
-        /* Executive Overview (Stitch Screen 1 & 2) */
-        <div className="space-y-6">
-          {/* Top Hero KPI Ribbon */}
-          <StitchHeroKpiRibbon
-            totalRecords={profile?.rowCount ? `${profile.rowCount.toLocaleString()}` : "4.82B"}
-            recordsDelta={kpis[0]?.percentageChange ? `${kpis[0].percentageChange > 0 ? "+" : ""}${kpis[0].percentageChange}%` : "+18.4%"}
-            activePipelines={kpis.length > 0 ? `${kpis.length} / ${kpis.length + 2} Healthy` : "142 / 144 Healthy"}
-          />
-
-          {/* Row 1: Ingestion Velocity & Autonomous Insights */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2">
-              <StitchIngestionVelocity />
-            </div>
-            <div className="xl:col-span-1">
-              <StitchAutonomousInsights />
-            </div>
+          <StitchPipelineFlowMap />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StitchConnectorsMonitor />
+            <StitchLatencyHeatmap />
           </div>
-
-          {/* Row 2: Warehouse Connectors & Real-Time SQL Profiler */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-1">
-              <StitchConnectorsMonitor onOpenTopology={() => setViewMode("fabric")} />
-            </div>
-            <div className="xl:col-span-2">
-              <StitchSqlProfiler />
-            </div>
-          </div>
+          <StitchSqlProfiler />
         </div>
       )}
 
-      {/* Interactive Analytical Visual Builder */}
-      <div className="stitch-card p-6 space-y-6 shadow-lg">
-        {/* Controls Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Chart Type Selector */}
-            <div className="flex items-center rounded-lg border border-border p-0.5 bg-muted/30">
-              <button
-                onClick={() => setChartType("bar")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "bar" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <BarChart3 className="h-3.5 w-3.5" /> Bar
-              </button>
-              <button
-                onClick={() => setChartType("line")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "line" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <LineChartIcon className="h-3.5 w-3.5" /> Line
-              </button>
-              <button
-                onClick={() => setChartType("area")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "area" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Layers className="h-3.5 w-3.5" /> Area
-              </button>
-              <button
-                onClick={() => setChartType("donut")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "donut" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <PieChartIcon className="h-3.5 w-3.5" /> Donut
-              </button>
-              <button
-                onClick={() => setChartType("scatter")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "scatter" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Scatter
-              </button>
-              <button
-                onClick={() => setChartType("radar")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartType === "radar" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Radar
-              </button>
-            </div>
-
-            {/* Time bucket (if temporal) */}
-            {(chartType === "line" || chartType === "area") && (
-              <select
-                aria-label="Select time aggregation"
-                value={timeBucket}
-                onChange={(e) => setTimeBucket(e.target.value as any)}
-                className="rounded-md border border-input bg-background px-2 py-1 text-xs font-medium"
-              >
-                <option value="day">Daily</option>
-                <option value="week">Weekly</option>
-                <option value="month">Monthly</option>
-                <option value="quarter">Quarterly</option>
-                <option value="year">Yearly</option>
-              </select>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Dimension dropdown */}
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground">Dimension:</span>
-              <select
-                aria-label="Select dimension"
-                value={selectedDimension}
-                onChange={(e) => setSelectedDimension(e.target.value)}
-                className="rounded-md border border-input bg-background px-2 py-1 font-medium text-foreground"
-              >
-                {profile?.columns?.map((c: any) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name} ({c.role})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Primary Measure dropdown */}
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground">Measure:</span>
-              <select
-                aria-label="Select measure"
-                value={selectedMeasure}
-                onChange={(e) => setSelectedMeasure(e.target.value)}
-                className="rounded-md border border-input bg-background px-2 py-1 font-semibold text-accent"
-              >
-                {profile?.measures?.map((m: any) => (
-                  <option key={m.name} value={m.name}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Secondary Measure for Scatter */}
-            {chartType === "scatter" && (
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Y-Axis:</span>
-                <select
-                  aria-label="Select secondary measure"
-                  value={selectedSecondaryMeasure}
-                  onChange={(e) => setSelectedSecondaryMeasure(e.target.value)}
-                  className="rounded-md border border-input bg-background px-2 py-1 font-semibold text-emerald-600"
-                >
-                  {profile?.measures?.map((m: any) => (
-                    <option key={m.name} value={m.name}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
+      {/* VIEW: 3D Data Model */}
+      {viewMode === "3d" && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
+          <DataModelVisualizer />
         </div>
+      )}
 
-        {/* Visual Canvas */}
-        <div className="h-[360px] w-full">
-          {loadingChart ? (
-            <div className="h-full flex items-center justify-center text-sm text-muted-foreground animate-pulse">
-              Computing aggregates in DuckDB...
+      {/* VIEW: Overview (SalesOps UI from template) */}
+      {viewMode === "overview" && (
+        <div className="space-y-6">
+          {/* Stat Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Revenue */}
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-sm hover:border-slate-700/80 transition-colors">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Revenue</p>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="text-3xl font-extrabold tracking-tight text-white">$2.4M</span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  +12.5%
+                </span>
+              </div>
             </div>
-          ) : !chartData || chartData.data?.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-              No data points matching current selection.
+
+            {/* Conversion Rate */}
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-sm hover:border-slate-700/80 transition-colors">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Conversion Rate</p>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="text-3xl font-extrabold tracking-tight text-white">24.8%</span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  +3.2%
+                </span>
+              </div>
             </div>
-          ) : chartType === "bar" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData.data} margin={{ top: 10, right: 20, left: 10, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                <XAxis dataKey="label" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(val: any) => [Number(val).toLocaleString(), selectedMeasure]}
-                  contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", borderRadius: 8, color: "#fff", border: "none" }}
-                />
-                <Bar dataKey="value" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]}>
-                  {chartData.data.map((entry: any, index: number) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.isAnomaly ? "#e34948" : CHART_COLORS[index % CHART_COLORS.length]}
+
+            {/* Active Deals */}
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-sm hover:border-slate-700/80 transition-colors">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Deals</p>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="text-3xl font-extrabold tracking-tight text-white">147</span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md">
+                  <ArrowDownRight className="w-3.5 h-3.5" />
+                  -5
+                </span>
+              </div>
+            </div>
+
+            {/* New Leads */}
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-sm hover:border-slate-700/80 transition-colors">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">New Leads</p>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="text-3xl font-extrabold tracking-tight text-white">892</span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  +18.3%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mid Section: Chart and Progress Stage Bars */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Revenue Trend Graph */}
+            <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Revenue Trend</h2>
+                  <p className="text-xs text-slate-400">Monthly performance vs target</p>
+                </div>
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
+                    <span className="text-slate-400">Revenue</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-0.5 w-3 bg-slate-500"></span>
+                    <span className="text-slate-400">Target</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-64 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={REVENUE_TREND_DATA} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" stroke="#64748b" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#64748b" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}k`} />
+                    <RechartsTooltip
+                      contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}
+                      itemStyle={{ color: "#e2e8f0", fontSize: "12px" }}
+                      formatter={(val: any, name: any) => [`$${val}k`, name === "revenue" ? "Revenue" : "Target"]}
                     />
+                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} fill="url(#revGrad)" />
+                    <Line type="monotone" dataKey="target" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Pipeline Distribution */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm flex flex-col justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-white">Pipeline Stages</h2>
+                <p className="text-xs text-slate-400 mb-6">Distribution by stage</p>
+
+                <div className="space-y-4">
+                  {PIPELINE_STAGES.map((stage) => (
+                    <div key={stage.name} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-medium">
+                        <span className="text-slate-300">{stage.name}</span>
+                        <div className="flex gap-2">
+                          <span className="text-slate-400">{stage.count}</span>
+                          <span className="text-slate-200 font-semibold">{stage.percent}%</span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full ${stage.color} rounded-full`} style={{ width: `${stage.percent}%` }}></div>
+                      </div>
+                    </div>
                   ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : chartType === "line" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData.data} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(val: any) => [Number(val).toLocaleString(), selectedMeasure]}
-                  contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", borderRadius: 8, color: "#fff", border: "none" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={CHART_COLORS[0]}
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: CHART_COLORS[0] }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : chartType === "area" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData.data} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS[0]} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={CHART_COLORS[0]} stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(val: any) => [Number(val).toLocaleString(), selectedMeasure]}
-                  contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", borderRadius: 8, color: "#fff", border: "none" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={CHART_COLORS[0]}
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#areaGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : chartType === "donut" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData.data.slice(0, 8)}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={75}
-                  outerRadius={120}
-                  paddingAngle={3}
-                  dataKey="value"
-                  nameKey="label"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {chartData.data.slice(0, 8).map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(val: any) => [Number(val).toLocaleString(), selectedMeasure]}
-                  contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", borderRadius: 8, color: "#fff", border: "none" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : chartType === "scatter" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                <CartesianGrid opacity={0.3} />
-                <XAxis type="number" dataKey="value" name={selectedMeasure} tick={{ fontSize: 11 }} />
-                <YAxis type="number" dataKey="secondaryValue" name={selectedSecondaryMeasure} tick={{ fontSize: 11 }} />
-                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                <Scatter name="Data Points" data={chartData.data} fill={CHART_COLORS[0]} />
-              </ScatterChart>
-            </ResponsiveContainer>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData.data.slice(0, 7)}>
-                <PolarGrid opacity={0.3} />
-                <PolarAngleAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <PolarRadiusAxis />
-                <Radar name={selectedMeasure} dataKey="value" stroke={CHART_COLORS[0]} fill={CHART_COLORS[0]} fillOpacity={0.5} />
-                <Tooltip />
-              </RadarChart>
-            </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="pt-5 mt-5 border-t border-slate-800 flex justify-between items-center">
+                <span className="text-xs text-slate-400 font-medium">Total Pipeline Value</span>
+                <span className="text-lg font-bold text-white">$4.8M</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Tables: Deals & Performers */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Deals Activity */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Recent Deals</h2>
+                  <p className="text-xs text-slate-400">Latest activity</p>
+                </div>
+                <Link href="/app/sources" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                  View all
+                </Link>
+              </div>
+
+              <div className="divide-y divide-slate-800/60">
+                {RECENT_DEALS.map((deal) => {
+                  const badgeClass =
+                    deal.status === "Won"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : deal.status === "Pending"
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      : "bg-rose-500/10 text-rose-400 border-rose-500/20";
+
+                  return (
+                    <div key={deal.name} className="py-3 flex items-center justify-between hover:bg-slate-800/20 px-2 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-200">
+                          {deal.initial}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">{deal.name}</p>
+                          <p className="text-xs text-slate-400">{deal.rep} • {deal.time}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-white">{deal.value}</span>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${badgeClass}`}>
+                          {deal.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Top Performers List */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Top Performers</h2>
+                  <p className="text-xs text-slate-400">This month&apos;s leaders</p>
+                </div>
+                <Link href="/app/insights" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                  Analytics
+                </Link>
+              </div>
+
+              <div className="divide-y divide-slate-800/60">
+                {TOP_PERFORMERS.map((perf) => (
+                  <div key={perf.name} className="py-2.5 flex items-center justify-between hover:bg-slate-800/20 px-2 rounded-lg transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+                        {perf.initials}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-slate-200">{perf.name}</p>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                            {perf.rank}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">{perf.deals}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-white">{perf.value}</p>
+                      <p className="text-xs text-emerald-400 font-medium">{perf.change}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Collapsible Raw Data Inspector (if active dataset is loaded) */}
+          {showDataInspector && datasetDetail?.preview && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Active Dataset Records</h3>
+                  <p className="text-xs text-slate-400">Previewing live parquet table rows</p>
+                </div>
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search records..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setTablePage(1);
+                    }}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-950/70 border border-slate-800 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-800">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800">
+                    <tr>
+                      {Object.keys(pagedRows[0] || {}).map((col) => (
+                        <th key={col} className="px-4 py-2.5 font-medium">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    {pagedRows.map((row: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                        {Object.values(row).map((val: any, cIdx: number) => (
+                          <td key={cIdx} className="px-4 py-2 font-mono whitespace-nowrap">
+                            {String(val ?? "—")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Raw Data Explorer */}
-      <div className="stitch-card overflow-hidden space-y-4 p-5 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <TableIcon className="h-4 w-4 text-cyan-400" />
-            <h3 className="text-base font-semibold text-foreground">Data Explorer (First 100 Sample Rows)</h3>
-          </div>
-
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-cyan-400" />
-            <input
-              type="text"
-              placeholder="Search values in table..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setTablePage(1);
-              }}
-              className="w-full rounded-lg border border-cyan-500/25 bg-[#0d1627]/80 pl-8 pr-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-cyan-400 font-mono"
-            />
-          </div>
-        </div>
-
-        {pagedRows.length === 0 ? (
-          <p className="text-center text-xs text-muted-foreground py-8">No records match your search query.</p>
-        ) : (
-          <div className="overflow-x-auto border border-white/10 rounded-lg">
-            <table className="w-full text-left text-xs border-collapse font-mono">
-              <thead className="bg-[#0f0f0f] border-b border-white/10 text-white">
-                <tr>
-                  {Object.keys(pagedRows[0]).map((k) => (
-                    <th key={k} className="p-2.5 px-3 font-semibold text-white whitespace-nowrap">
-                      {k}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 bg-black/50">
-                {pagedRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-white/[0.04] transition-colors">
-                    {Object.keys(pagedRows[0]).map((k) => (
-                      <td key={k} className="p-2 px-3 whitespace-nowrap text-zinc-300">
-                        {row[k] !== null && row[k] !== undefined ? String(row[k]) : "—"}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {previewRows.length > 15 && (
-          <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-            <span className="font-mono">
-              Showing {(tablePage - 1) * 15 + 1} to {Math.min(tablePage * 15, previewRows.length)} of {previewRows.length} sample rows
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={tablePage === 1}
-                onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                className="h-7 text-xs border-white/10 text-white hover:bg-white/10"
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={tablePage * 15 >= previewRows.length}
-                onClick={() => setTablePage((p) => p + 1)}
-                className="h-7 text-xs border-white/10 text-white hover:bg-white/10"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

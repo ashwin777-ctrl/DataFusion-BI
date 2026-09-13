@@ -1,19 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/lib/auth/actions";
 import type { OrgSummary } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { OrgSwitcher } from "./org-switcher";
 import {
-  LayoutDashboard,
-  Database,
-  GitMerge,
-  GitCompare,
-  Sparkles,
-  FileText,
-  Settings,
+  Calendar,
+  Bell,
   LogOut,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -37,114 +31,76 @@ export function AppHeader({
     setMounted(true);
   }, []);
 
-  const navItems = [
-    { label: "Dashboard", href: "/app", icon: LayoutDashboard },
-    { label: "Data Sources", href: "/app/sources", icon: Database },
-    { label: "Data Prep & Model", href: "/app/prep", icon: GitMerge },
-    { label: "Data Compare", href: "/app/compare", icon: GitCompare },
-    { label: "Insights", href: "/app/insights", icon: Sparkles },
-    { label: "Reports & Export", href: "/app/reports", icon: FileText },
-    { label: "Settings", href: "/app/settings", icon: Settings },
-  ];
+  const getPageTitle = () => {
+    if (pathname === "/app") return "Overview";
+    if (pathname.startsWith("/app/sources")) return "Pipeline & Sources";
+    if (pathname.startsWith("/app/prep")) return "Data Prep & Model";
+    if (pathname.startsWith("/app/compare")) return "Data Compare";
+    if (pathname.startsWith("/app/insights")) return "Forecasting & Insights";
+    if (pathname.startsWith("/app/reports")) return "Reports";
+    if (pathname.startsWith("/app/settings")) return "Settings";
+    return "Overview";
+  };
+
+  const initials = userName
+    ? userName
+        .split(" ")
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : (userEmail?.slice(0, 2) || "DF").toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#101012]/75 backdrop-blur-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-colors">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href="/app" className="flex items-center gap-2.5 group">
-            <span className="flex h-7.5 w-7.5 items-center justify-center rounded-[10px] bg-blue-600 dark:bg-blue-500 text-white font-bold text-xs shadow-[0_2px_6px_rgba(0,113,227,0.35)] group-hover:scale-105 transition-all">
-              DF
-            </span>
-            <div className="hidden md:flex flex-col">
-              <span className="font-semibold text-[14px] tracking-tight text-foreground leading-none">DataFusion</span>
-              <span className="text-[10px] font-mono tracking-wider text-muted-foreground font-medium leading-none mt-1">
-                ENTERPRISE BI
-              </span>
-            </div>
-          </Link>
-          <span className="text-muted-foreground/40 hidden sm:inline" aria-hidden>
-            /
-          </span>
+    <header className="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/60 backdrop-blur-md sticky top-0 z-20">
+      {/* Left Title & Org */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold text-white tracking-tight">{getPageTitle()}</h1>
+        <div className="hidden sm:flex items-center gap-2 border-l border-slate-800 pl-4">
           <OrgSwitcher orgs={orgs} activeOrgId={activeOrgId} />
-
-          {/* Live Cluster Status Pill */}
-          <div className="hidden 2xl:flex items-center gap-2 pl-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-              LIVE DUAL-SYNC
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] text-muted-foreground text-[10px] font-mono uppercase tracking-wider">
-              PROD-US-EAST
-            </span>
-          </div>
-        </div>
-
-        {/* Center navigation tabs */}
-        <nav className="hidden lg:flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.04] p-1 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active =
-              item.href === "/app"
-                ? pathname === "/app"
-                : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-150 ${
-                  active
-                    ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.06]"
-                }`}
-              >
-                <Icon className={`h-3.5 w-3.5 ${active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          {mounted && <ThemeSwitcher className="scale-95" />}
-
-          <span className="hidden xl:inline max-w-[10rem] truncate text-[12px] text-muted-foreground border-l border-border pl-2">
-            {userName ?? userEmail}
-          </span>
-
-          <form action={logoutAction}>
-            <Button type="submit" variant="ghost" size="sm" className="h-8 rounded-full gap-1 text-xs text-muted-foreground hover:text-destructive">
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Sign out</span>
-            </Button>
-          </form>
         </div>
       </div>
 
-      {/* Mobile/Tablet Subnav */}
-      <div className="flex lg:hidden border-t border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#101012]/80 backdrop-blur-lg px-4 py-1.5 overflow-x-auto gap-1.5 w-full max-w-full">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active =
-            item.href === "/app"
-              ? pathname === "/app"
-              : pathname.startsWith(item.href);
+      {/* Right Actions & Profile */}
+      <div className="flex items-center gap-3">
+        {/* Date Filter */}
+        <div className="hidden md:flex items-center gap-2 bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs text-slate-300">
+          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+          <span>Last 30 days</span>
+        </div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                active
-                  ? "bg-blue-600 text-white font-semibold shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.06]"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        {/* Theme switcher */}
+        {mounted && <ThemeSwitcher className="scale-90" />}
+
+        {/* Notification Bell */}
+        <button
+          title="Notifications"
+          className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 rounded-lg transition-colors relative"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-950"></span>
+        </button>
+
+        {/* User Initials Avatar */}
+        <div
+          title={userName || userEmail}
+          className="h-9 w-9 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-xs font-semibold text-indigo-300 select-none shrink-0"
+        >
+          {initials}
+        </div>
+
+        {/* Sign Out */}
+        <form action={logoutAction}>
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="h-9 px-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/60 rounded-lg"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
     </header>
   );
