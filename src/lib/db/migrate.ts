@@ -82,6 +82,9 @@ function policyExprs(table: string): { using: string; check: string } {
 }
 
 async function main() {
+  if (!OWNER_URL) {
+    throw new Error("MIGRATION_DATABASE_URL or DATABASE_URL is required.");
+  }
   const isRemoteOrSsl = Boolean(
     OWNER_URL.includes("supabase") ||
     OWNER_URL.includes("sslmode") ||
