@@ -186,6 +186,7 @@ export function AppHeader({
             size="sm"
             className="h-9 px-2 text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-lg"
             title="Sign out"
+            aria-label="Sign out"
           >
             <LogOut className="h-4 w-4" />
           </Button>

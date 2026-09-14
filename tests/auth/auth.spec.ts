@@ -29,7 +29,7 @@ test.describe("Authentication Workflows", () => {
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.locator("main")).toBeVisible();
     await expect(
-      page.locator("text=/Dynamic analytical model verified by embedded DuckDB engine|Welcome to Confluence BI|Connect Data Source/i").first(),
+      page.locator("text=/Dynamic analytical model|SalesOps|Consolidated Model|PostgreSQL 16 active|Overview/i").first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 

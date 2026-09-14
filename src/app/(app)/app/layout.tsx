@@ -21,7 +21,7 @@ export default async function AppShellLayout({
           orgs={session.memberships}
           activeOrgId={session.activeOrg?.id ?? orgId}
         />
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 p-6">
           {children}
         </main>
       </div>

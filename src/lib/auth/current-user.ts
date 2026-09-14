@@ -44,8 +44,8 @@ export async function requireUser(): Promise<ResolvedSession> {
     try {
       const h = await headers();
       const accept = h.get("accept") || "";
-      const path = h.get("x-url") || h.get("x-invoke-path") || "";
-      if (accept.includes("application/json") || path.includes("/api/")) {
+      const path = h.get("x-pathname") || h.get("x-url") || h.get("x-invoke-path") || "";
+      if (accept.includes("application/json") || path.startsWith("/api/")) {
         throw new UnauthorizedError();
       }
     } catch (e) {
@@ -71,7 +71,8 @@ export async function requireOrg(): Promise<{
     try {
       const h = await headers();
       const accept = h.get("accept") || "";
-      if (accept.includes("application/json")) {
+      const path = h.get("x-pathname") || h.get("x-url") || h.get("x-invoke-path") || "";
+      if (accept.includes("application/json") || path.startsWith("/api/")) {
         throw new ForbiddenError();
       }
     } catch (e) {

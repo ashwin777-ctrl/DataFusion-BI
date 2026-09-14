@@ -5,27 +5,7 @@ import { withDuckDB, getOrgStorageDir, queryDuckDB, persistStorageBlob } from "@
 import type { SupportedFormat, DatasetProfileInfo } from "./types";
 import { profileDatasetParquet } from "./profiler";
 
-import pg from "pg";
-const { Pool } = pg;
-
-declare global {
-  var __comparePgPool: pg.Pool | undefined;
-}
-
-function getDbPool(): pg.Pool | null {
-  try {
-    const connStr = process.env.DATABASE_URL || "postgres://bi_app:bi_app_pw@127.0.0.1:5434/bi_platform";
-    if (!globalThis.__comparePgPool) {
-      globalThis.__comparePgPool = new Pool({
-        connectionString: connStr,
-        connectionTimeoutMillis: 5000,
-      });
-    }
-    return globalThis.__comparePgPool;
-  } catch {
-    return null;
-  }
-}
+import { withOrgTx } from "@/lib/db";
 
 /**
  * Determine supported format from filename.
@@ -242,12 +222,9 @@ export async function ingestCompareDataset(params: {
     profile.isPostgresStaged = false;
   }
 
-  // Record comparison source metadata in PostgreSQL
+  // Record comparison source metadata in PostgreSQL under tenant RLS
   try {
-    const pool = await getDbPool();
-    if (pool) {
-      const client = await pool.connect();
-    try {
+    await withOrgTx(orgId, async (_db, client) => {
       // Ensure stub job exists if needed so foreign key doesn't fail
       await client.query(
         `INSERT INTO comparison_jobs (id, org_id, name, status, created_at)
@@ -279,10 +256,7 @@ export async function ingestCompareDataset(params: {
           JSON.stringify({ rowCount: profile.rowCount, columnCount: profile.columnCount }),
         ]
       ).catch(() => {});
-    } finally {
-      client.release();
-    }
-    }
+    });
   } catch {
     // Non-critical if DB is offline during unit testing
   }
@@ -302,82 +276,70 @@ async function stageSource2InPostgres(params: {
   const { orgId, jobId, profile, parquetPath } = params;
   const tableName = `staging_${jobId.replace(/[^a-zA-Z0-9_]/g, "_")}_s2`;
 
-  const pool = await getDbPool();
-  if (!pool) return;
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
+    await withOrgTx(orgId, async (_db, client) => {
+      // Construct table schema from profile columns
+      const colDefs = profile.columns.map((col) => {
+        const colType =
+          col.inferredType === "integer"
+            ? "BIGINT"
+            : col.inferredType === "float"
+              ? "DOUBLE PRECISION"
+              : col.inferredType === "boolean"
+                ? "BOOLEAN"
+                : "TEXT";
+        return `"${col.name}" ${colType}`;
+      });
 
-    // Construct table schema from profile columns
-    const colDefs = profile.columns.map((col) => {
-      const colType =
-        col.inferredType === "integer"
-          ? "BIGINT"
-          : col.inferredType === "float"
-            ? "DOUBLE PRECISION"
-            : col.inferredType === "boolean"
-              ? "BOOLEAN"
-              : "TEXT";
-      return `"${col.name}" ${colType}`;
-    });
+      await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+      await client.query(`CREATE TABLE "${tableName}" (
+        _staging_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        _staged_at TIMESTAMPTZ DEFAULT NOW(),
+        ${colDefs.join(",\n      ")}
+      );`);
 
-    await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
-    await client.query(`CREATE TABLE "${tableName}" (
-      _staging_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      _staged_at TIMESTAMPTZ DEFAULT NOW(),
-      ${colDefs.join(",\n      ")}
-    );`);
+      // Fetch sample/first 5000 rows from DuckDB Parquet to populate PostgreSQL staging
+      const rows = await withDuckDB(async (conn) => {
+        return await queryDuckDB<Record<string, any>>(
+          conn,
+          `SELECT * FROM read_parquet('${parquetPath}') LIMIT 5000;`,
+        );
+      });
 
-    // Fetch sample/first 5000 rows from DuckDB Parquet to populate PostgreSQL staging
-    const rows = await withDuckDB(async (conn) => {
-      return await queryDuckDB<Record<string, any>>(
-        conn,
-        `SELECT * FROM read_parquet('${parquetPath}') LIMIT 5000;`,
-      );
-    });
+      if (rows.length > 0) {
+        const cols = profile.columns.map((c) => c.name);
+        const colList = cols.map((c) => `"${c}"`).join(", ");
 
-    if (rows.length > 0) {
-      const cols = profile.columns.map((c) => c.name);
-      const colList = cols.map((c) => `"${c}"`).join(", ");
+        for (let i = 0; i < rows.length; i += 100) {
+          const batch = rows.slice(i, i + 100);
+          const valClauses: string[] = [];
+          const paramsList: any[] = [];
+          let pIdx = 1;
 
-      for (let i = 0; i < rows.length; i += 100) {
-        const batch = rows.slice(i, i + 100);
-        const valClauses: string[] = [];
-        const paramsList: any[] = [];
-        let pIdx = 1;
-
-        for (const row of batch) {
-          const placeholders: string[] = [];
-          for (const c of cols) {
-            placeholders.push(`$${pIdx++}`);
-            const val = row[c];
-            paramsList.push(val !== undefined && val !== null ? val : null);
+          for (const row of batch) {
+            const placeholders: string[] = [];
+            for (const c of cols) {
+              placeholders.push(`$${pIdx++}`);
+              const val = row[c];
+              paramsList.push(val !== undefined && val !== null ? val : null);
+            }
+            valClauses.push(`(${placeholders.join(", ")})`);
           }
-          valClauses.push(`(${placeholders.join(", ")})`);
+
+          const insertSql = `INSERT INTO "${tableName}" (${colList}) VALUES ${valClauses.join(", ")};`;
+          await client.query(insertSql, paramsList);
         }
-
-        const insertSql = `INSERT INTO "${tableName}" (${colList}) VALUES ${valClauses.join(", ")};`;
-        await client.query(insertSql, paramsList);
       }
-    }
 
-    await client.query("COMMIT");
-
-    // Optional metadata tracking if staging_tables exists
-    try {
+      // Metadata tracking in staging_tables
       await client.query(
         `INSERT INTO staging_tables (id, job_id, org_id, table_name, schema_definition, row_count, created_at, expires_at)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW() + interval '7 days')
          ON CONFLICT DO NOTHING`,
         [jobId, orgId, tableName, JSON.stringify(profile.columns), profile.rowCount]
-      );
-    } catch {
-      // Optional metadata table not present
-    }
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
-    throw err;
-  } finally {
-    client.release();
+      ).catch(() => {});
+    });
+  } catch (err: any) {
+    console.warn("PostgreSQL staging non-critical warning:", err.message);
   }
 }

@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { withDuckDB, getSourceParquetPath, getOrgStorageDir } from "./duckdb";
 import { profileParquetFile, type DatasetProfile } from "./profile";
@@ -176,17 +176,13 @@ export async function ingestUploadedFile(params: {
     profile = await withDuckDB(async (conn) => {
       const delim = fileKind === "tsv" ? "\\t" : ",";
       await conn.run(
-        `CREATE TABLE temp_ingest AS SELECT * FROM read_csv('${tempCsvPath}', header=true, delim='${delim}', auto_detect=true, null_padding=true, ignore_errors=true)`,
+        `COPY (SELECT * FROM read_csv('${tempCsvPath}', header=true, delim='${delim}', auto_detect=true, null_padding=true, ignore_errors=true)) TO '${normParquetPath}' (FORMAT PARQUET, COMPRESSION ZSTD)`,
       );
-      await conn.run(
-        `COPY temp_ingest TO '${normParquetPath}' (FORMAT PARQUET, COMPRESSION ZSTD)`,
-      );
-      await conn.run(`DROP TABLE temp_ingest`);
       return await profileParquetFile(conn, parquetPath);
     });
   } finally {
     try {
-      if (readFileSync(tempCsvPath)) {
+      if (existsSync(tempCsvPath)) {
         unlinkSync(tempCsvPath);
       }
     } catch {
