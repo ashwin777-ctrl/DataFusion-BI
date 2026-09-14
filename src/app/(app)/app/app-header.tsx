@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
+import { clientCache } from "@/lib/cache/client-cache";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useEffect, useState, useRef } from "react";
 
@@ -28,7 +29,7 @@ export function AppHeader({
 }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [timeRange, setTimeRange] = useState("Last 30 days");
+  const [timeRange, setTimeRange] = useState(() => clientCache.activeTimeRange || "Last 30 days");
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
@@ -109,6 +110,7 @@ export function AppHeader({
                   type="button"
                   onClick={() => {
                     setTimeRange(opt);
+                    clientCache.setTimeRange(opt);
                     setShowTimeDropdown(false);
                   }}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"

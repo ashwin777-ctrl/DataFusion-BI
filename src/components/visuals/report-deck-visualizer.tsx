@@ -48,9 +48,37 @@ const REPORT_PAGES: ReportPage[] = [
   }
 ];
 
-export function ReportDeckVisualizer() {
+const HOUSING_REPORT_PAGES: ReportPage[] = [
+  {
+    id: 1,
+    title: "Regional Housing Portfolio Valuation & Cap-Rate Briefing",
+    subtitle: "Automated Hedonic Real Estate Rollup for Investment Committee",
+    category: "Real Estate Analytics",
+    date: "September 11, 2026",
+    status: "Verified & Appraised"
+  },
+  {
+    id: 2,
+    title: "King County Zoning & Spatial Parcel Telemetry",
+    subtitle: "DuckDB ST_Intersects Bounding Box Acceleration",
+    category: "GIS & Telemetry",
+    date: "September 10, 2026",
+    status: "Telemetry Passed"
+  },
+  {
+    id: 3,
+    title: "Asset Title & Multi-Tenant Partition Isolation Audit",
+    subtitle: "Row-Level Security Proof for Institutional Lenders",
+    category: "Compliance & Governance",
+    date: "September 08, 2026",
+    status: "100% Compliant"
+  }
+];
+
+export function ReportDeckVisualizer({ activeModel }: { activeModel?: string }) {
   const [activePage, setActivePage] = useState<number>(1);
-  const current = REPORT_PAGES.find(p => p.id === activePage) || REPORT_PAGES[0]!;
+  const pages = activeModel === "housing" ? HOUSING_REPORT_PAGES : REPORT_PAGES;
+  const current = pages.find(p => p.id === activePage) || pages[0]!;
 
   return (
     <div className="w-full rounded-[24px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.35)] overflow-hidden">

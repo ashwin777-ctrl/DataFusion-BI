@@ -12,11 +12,14 @@ import {
   Activity, 
   Cpu, 
   HardDrive, 
-  Network 
+  Network,
+  Menu,
+  X,
 } from "lucide-react";
 
 export default function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const logos = ["Vercel", "Stripe", "Linear", "Notion", "Figma", "Slack", "Discord", "GitHub"];
 
@@ -39,18 +42,69 @@ export default function LandingPage() {
               <Link href="/login" className="transition hover:text-white">Changelog</Link>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-3 text-sm">
             <Link href="/login" className="hidden text-neutral-400 transition hover:text-white sm:inline-block">
               Sign In
             </Link>
             <Link
               href="/signup"
-              className="rounded-full bg-white px-4 py-2 font-medium text-black transition hover:bg-neutral-200"
+              className="hidden sm:inline-block rounded-full bg-white px-4 py-2 font-medium text-black transition hover:bg-neutral-200"
             >
               Get Started
             </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-1 text-neutral-400 hover:text-white focus:outline-none"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </nav>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="mt-2 rounded-2xl border border-neutral-800 bg-neutral-950/95 p-4 backdrop-blur-xl md:hidden shadow-2xl flex flex-col gap-2.5 text-sm animate-in fade-in slide-in-from-top-2">
+            <a
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-900 transition"
+            >
+              Features
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-900 transition"
+            >
+              Pricing
+            </a>
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-900 transition"
+            >
+              Documentation
+            </Link>
+            <div className="pt-2 border-t border-neutral-800 flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-center py-2 rounded-xl text-neutral-300 hover:bg-neutral-900 transition"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-center py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-neutral-200 transition"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}

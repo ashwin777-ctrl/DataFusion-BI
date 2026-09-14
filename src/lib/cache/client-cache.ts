@@ -19,6 +19,8 @@ export interface ClientCache {
   sources: any[] | null;
   datasets: any[] | null;
   activeDatasetId: string | null;
+  activeModel: "consolidated" | "housing" | string;
+  activeTimeRange: string;
   details: Record<string, any>;
   kpis: Record<string, any[]>;
   insights: Record<string, any>;
@@ -27,12 +29,16 @@ export interface ClientCache {
   setKpi: (id: string, kpiList: any[]) => void;
   setInsight: (id: string, rep: any) => void;
   setChart: (key: string, data: any) => void;
+  setModel: (model: string, datasetId?: string | null) => void;
+  setTimeRange: (range: string) => void;
 }
 
 export const clientCache: ClientCache = {
   sources: null,
   datasets: null,
   activeDatasetId: null,
+  activeModel: "consolidated",
+  activeTimeRange: "Last 30 days",
   details: {},
   kpis: {},
   insights: {},
@@ -53,4 +59,26 @@ export const clientCache: ClientCache = {
     this.charts[key] = data;
     pruneRecord(this.charts, 5);
   },
+  setModel(model: string, datasetId?: string | null) {
+    this.activeModel = model;
+    if (datasetId) this.activeDatasetId = datasetId;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("df-model-change", {
+          detail: { model, datasetId: this.activeDatasetId },
+        })
+      );
+    }
+  },
+  setTimeRange(range: string) {
+    this.activeTimeRange = range;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("df-timerange-change", {
+          detail: { timeRange: range },
+        })
+      );
+    }
+  },
 };
+

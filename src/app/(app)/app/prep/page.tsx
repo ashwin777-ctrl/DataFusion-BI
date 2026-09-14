@@ -45,6 +45,109 @@ export default function PrepPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Column hygiene & transformation state
+  const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
+  const [activeTransformDatasetId, setActiveTransformDatasetId] = useState<string | null>(
+    () => clientCache.activeDatasetId || clientCache.datasets?.[0]?.id || null,
+  );
+  const [transformDetail, setTransformDetail] = useState<any>(null);
+  const [transformLoading, setTransformLoading] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<string>("");
+  const [transformAction, setTransformAction] = useState<"drop_nulls" | "fillna" | "rename" | "cast">("drop_nulls");
+  const [newColumnName, setNewColumnName] = useState("");
+  const [fillValue, setFillValue] = useState("");
+  const [targetType, setTargetType] = useState<"VARCHAR" | "BIGINT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "BOOLEAN">("VARCHAR");
+  const [applyingTransform, setApplyingTransform] = useState(false);
+  const [transformMsg, setTransformMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    async function loadDatasets() {
+      try {
+        const res = await fetch("/api/datasets");
+        const data = await res.json();
+        if (res.ok && data.datasets?.length > 0) {
+          setDatasets(data.datasets);
+          clientCache.datasets = data.datasets;
+          if (!activeTransformDatasetId) {
+            setActiveTransformDatasetId(data.datasets[0].id);
+          }
+        }
+      } catch {}
+    }
+    loadDatasets();
+  }, [activeTransformDatasetId]);
+
+  useEffect(() => {
+    if (!activeTransformDatasetId) return;
+    async function loadDetail() {
+      try {
+        setTransformLoading(true);
+        const res = await fetch(`/api/datasets/${activeTransformDatasetId}`);
+        const data = await res.json();
+        if (res.ok) {
+          setTransformDetail(data);
+          if (data.profile?.columns?.length > 0) {
+            setSelectedColumn((prev: string) => prev || data.profile.columns[0].name);
+          }
+        }
+      } catch {} finally {
+        setTransformLoading(false);
+      }
+    }
+    loadDetail();
+  }, [activeTransformDatasetId]);
+
+  async function handleApplyTransformation() {
+    if (!activeTransformDatasetId || !selectedColumn) return;
+    setApplyingTransform(true);
+    setTransformMsg(null);
+    try {
+      const step: any = {
+        id: `step_${Date.now()}`,
+        action: transformAction,
+        column: selectedColumn,
+      };
+      if (transformAction === "rename") {
+        if (!newColumnName.trim()) {
+          setTransformMsg({ type: "error", text: "New column name cannot be empty" });
+          setApplyingTransform(false);
+          return;
+        }
+        step.newColumnName = newColumnName.trim();
+      } else if (transformAction === "fillna") {
+        step.fillValue = fillValue;
+      } else if (transformAction === "cast") {
+        step.targetType = targetType;
+      }
+
+      const res = await fetch(`/api/datasets/${activeTransformDatasetId}/transform`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steps: [step] }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setTransformMsg({
+          type: "success",
+          text: `Transformation applied successfully! Updated dataset now has ${result.rowCount?.toLocaleString()} rows.`,
+        });
+        // refresh detail
+        const refRes = await fetch(`/api/datasets/${activeTransformDatasetId}`);
+        const refData = await refRes.json();
+        if (refRes.ok) {
+          setTransformDetail(refData);
+          clientCache.details[activeTransformDatasetId] = refData;
+        }
+      } else {
+        setTransformMsg({ type: "error", text: result.error || "Transformation failed" });
+      }
+    } catch (err: any) {
+      setTransformMsg({ type: "error", text: err.message || "Failed to execute transformation" });
+    } finally {
+      setApplyingTransform(false);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       try {
@@ -432,6 +535,182 @@ export default function PrepPage() {
           )}
         </div>
       )}
+
+      {/* Step 3: Column Hygiene & In-Place Transformations */}
+      <div className="stitch-card p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-xs">
+                3
+              </span>
+              <h2 className="text-base font-bold text-foreground">Column Hygiene & In-Place Transformations</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Sanitize null values, cast columnar datatypes, and rename dimensions directly in the DuckDB Parquet storage engine.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Target Dataset:</span>
+            <select
+              value={activeTransformDatasetId || ""}
+              onChange={(e) => setActiveTransformDatasetId(e.target.value)}
+              className="rounded-lg border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
+            >
+              {datasets.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} ({d.rowCount?.toLocaleString()} rows)
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {transformMsg && (
+          <div
+            className={`flex items-center gap-2 rounded-lg p-3 text-xs ${
+              transformMsg.type === "success"
+                ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "border border-destructive/20 bg-destructive/10 text-destructive"
+            }`}
+          >
+            {transformMsg.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0" />
+            )}
+            <span>{transformMsg.text}</span>
+          </div>
+        )}
+
+        {transformLoading ? (
+          <div className="h-32 bg-muted/40 animate-pulse rounded-xl" />
+        ) : !transformDetail ? (
+          <p className="text-xs text-muted-foreground">Select a dataset above to configure columnar transformations.</p>
+        ) : (
+          <div className="space-y-4">
+            {/* Columns Schema Grid */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Detected Column Schema ({transformDetail.profile?.columns?.length || 0} columns)
+                </span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  Total Rows: <strong className="text-foreground">{transformDetail.profile?.rowCount?.toLocaleString()}</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                {transformDetail.profile?.columns?.map((col: any) => (
+                  <button
+                    key={col.name}
+                    type="button"
+                    onClick={() => setSelectedColumn(col.name)}
+                    className={`text-left p-2.5 rounded-xl border transition-all ${
+                      selectedColumn === col.name
+                        ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 ring-1 ring-indigo-500"
+                        : "border-border bg-card/60 hover:border-border-strong"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-xs font-semibold text-foreground truncate block" title={col.name}>
+                        {col.name}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                        {col.duckdbType}
+                      </Badge>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex justify-between">
+                      <span>Nulls: {col.nullCount ?? 0}</span>
+                      <span>Card: {col.distinctCount ?? "—"}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Transformation Configuration Builder */}
+            <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+              <span className="text-xs font-bold text-foreground uppercase tracking-wider block">
+                Configure Transformation on Column: <strong className="text-indigo-600 dark:text-indigo-400">{selectedColumn || "None selected"}</strong>
+              </span>
+
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] text-muted-foreground font-semibold block mb-1">Operation</label>
+                  <select
+                    value={transformAction}
+                    onChange={(e) => setTransformAction(e.target.value as any)}
+                    className="w-full rounded-lg border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
+                  >
+                    <option value="drop_nulls">Drop Null Rows (IS NOT NULL)</option>
+                    <option value="fillna">Fill Missing Values (COALESCE)</option>
+                    <option value="rename">Rename Column</option>
+                    <option value="cast">Cast Data Type</option>
+                  </select>
+                </div>
+
+                {transformAction === "fillna" && (
+                  <div>
+                    <label className="text-[11px] text-muted-foreground font-semibold block mb-1">Replacement Value</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 0 or 'N/A'"
+                      value={fillValue}
+                      onChange={(e) => setFillValue(e.target.value)}
+                      className="w-full rounded-lg border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-foreground font-mono"
+                    />
+                  </div>
+                )}
+
+                {transformAction === "rename" && (
+                  <div>
+                    <label className="text-[11px] text-muted-foreground font-semibold block mb-1">New Column Name</label>
+                    <input
+                      type="text"
+                      placeholder="new_column_name"
+                      value={newColumnName}
+                      onChange={(e) => setNewColumnName(e.target.value)}
+                      className="w-full rounded-lg border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-foreground font-mono"
+                    />
+                  </div>
+                )}
+
+                {transformAction === "cast" && (
+                  <div>
+                    <label className="text-[11px] text-muted-foreground font-semibold block mb-1">Target Type</label>
+                    <select
+                      value={targetType}
+                      onChange={(e) => setTargetType(e.target.value as any)}
+                      className="w-full rounded-lg border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
+                    >
+                      <option value="VARCHAR">VARCHAR (Text)</option>
+                      <option value="BIGINT">BIGINT (Integer)</option>
+                      <option value="DOUBLE">DOUBLE (Decimal)</option>
+                      <option value="DATE">DATE</option>
+                      <option value="TIMESTAMP">TIMESTAMP</option>
+                      <option value="BOOLEAN">BOOLEAN</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    onClick={handleApplyTransformation}
+                    disabled={applyingTransform || !selectedColumn}
+                    className="w-full gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>{applyingTransform ? "Executing in DuckDB..." : "Apply Transformation"}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

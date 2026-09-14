@@ -19,12 +19,26 @@ import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-stat
 export default function InsightsPage() {
   const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
   const [activeDatasetId, setActiveDatasetId] = useState<string | null>(() => clientCache.activeDatasetId || clientCache.datasets?.[0]?.id || null);
+  const [activeModel, setActiveModel] = useState<string>(() => clientCache.activeModel || "consolidated");
   const [report, setReport] = useState<any>(() => {
     const initialId = clientCache.activeDatasetId || clientCache.datasets?.[0]?.id;
     return initialId ? clientCache.insights[initialId] || null : null;
   });
   const [loading, setLoading] = useState(!clientCache.datasets);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    function onModelChange(e: any) {
+      if (e.detail?.model) {
+        setActiveModel(e.detail.model);
+        if (e.detail.datasetId) {
+          setActiveDatasetId(e.detail.datasetId);
+        }
+      }
+    }
+    window.addEventListener("df-model-change", onModelChange);
+    return () => window.removeEventListener("df-model-change", onModelChange);
+  }, []);
 
   useEffect(() => {
     async function loadDatasets() {
@@ -151,7 +165,7 @@ export default function InsightsPage() {
       </div>
 
       {/* Visual Statistical Storytelling & Anomaly Detection */}
-      <InsightsStorytelling />
+      <InsightsStorytelling activeModel={activeModel} />
 
       {refreshing ? (
         <div className="p-12 text-center text-sm text-muted-foreground animate-pulse">

@@ -146,7 +146,12 @@ export default function DashboardPage() {
   const [, setError] = useState<string | null>(null);
 
   // Model selector: drives which dataset is active
-  const [selectedModel, setSelectedModel] = useState<"consolidated" | "housing">("consolidated");
+  const [selectedModel, setSelectedModel] = useState<"consolidated" | "housing">(() => {
+    return (clientCache.activeModel as any) === "housing" ? "housing" : "consolidated";
+  });
+  const [timeRange, setTimeRange] = useState(() => clientCache.activeTimeRange || "Last 30 days");
+  const [stageFilter, setStageFilter] = useState<"All" | "Won" | "Pending" | "Lost">("All");
+  const [dealSearchQuery, setDealSearchQuery] = useState("");
 
   // Clear All Data confirmation & cleared flag
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -160,8 +165,50 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<"overview" | "fabric" | "3d">("overview");
   const [showDataInspector, setShowDataInspector] = useState(false);
 
+  // Synchronize global model and timerange events
+  useEffect(() => {
+    function onModelChange(e: any) {
+      if (e.detail?.model && (e.detail.model === "consolidated" || e.detail.model === "housing")) {
+        setSelectedModel(e.detail.model);
+      }
+    }
+    function onTimeRangeChange(e: any) {
+      if (e.detail?.timeRange) {
+        setTimeRange(e.detail.timeRange);
+      }
+    }
+    window.addEventListener("df-model-change", onModelChange);
+    window.addEventListener("df-timerange-change", onTimeRangeChange);
+    return () => {
+      window.removeEventListener("df-model-change", onModelChange);
+      window.removeEventListener("df-timerange-change", onTimeRangeChange);
+    };
+  }, []);
+
   // Active active data model source
   const currentModelData = selectedModel === "consolidated" ? CONSOLIDATED_METRICS : HOUSING_METRICS;
+
+  const displayedTrendData = useMemo(() => {
+    if (isDataCleared) return [];
+    const all = currentModelData.trendData;
+    if (timeRange === "Today") return all.slice(-2);
+    if (timeRange === "Last 7 days") return all.slice(-4);
+    if (timeRange === "Last 30 days") return all.slice(-6);
+    if (timeRange === "Last 90 days") return all.slice(-9);
+    return all;
+  }, [isDataCleared, currentModelData.trendData, timeRange]);
+
+  const filteredDeals = useMemo(() => {
+    if (isDataCleared) return [];
+    return currentModelData.deals.filter((deal) => {
+      const matchStage = stageFilter === "All" || deal.status === stageFilter;
+      const matchSearch =
+        !dealSearchQuery ||
+        deal.name.toLowerCase().includes(dealSearchQuery.toLowerCase()) ||
+        deal.rep.toLowerCase().includes(dealSearchQuery.toLowerCase());
+      return matchStage && matchSearch;
+    });
+  }, [isDataCleared, currentModelData.deals, stageFilter, dealSearchQuery]);
 
   // Resolve which dataset corresponds to the currently selected model
   const resolveModelDatasetId = useCallback((model: "consolidated" | "housing", datasetList: any[]): string | null => {
@@ -178,9 +225,9 @@ export default function DashboardPage() {
     setSelectedModel(model);
     setIsDataCleared(false);
     const newId = resolveModelDatasetId(model, datasetList);
+    clientCache.setModel(model, newId);
     if (newId && newId !== activeDatasetId) {
       setActiveDatasetId(newId);
-      clientCache.activeDatasetId = newId;
       setTablePage(1);
     }
   }, [activeDatasetId, resolveModelDatasetId]);
@@ -641,7 +688,7 @@ export default function DashboardPage() {
 
               <div className="h-64 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={isDataCleared ? [] : currentModelData.trendData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <AreaChart data={displayedTrendData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
@@ -696,25 +743,79 @@ export default function DashboardPage() {
 
           {/* Bottom Tables: Deals & Performers */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Deals Activity */}
+            {/* Recent Deals Activity with interactive stage filters and search */}
             <div className="bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Latest transactions</p>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
+                    <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-mono">
+                      {filteredDeals.length}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Interactive transaction monitor</p>
                 </div>
-                <Link href="/app/sources" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
-                  View all
-                </Link>
+
+                {/* Stage Filter Chips */}
+                <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-lg text-xs">
+                  {(["All", "Won", "Pending", "Lost"] as const).map((stage) => (
+                    <button
+                      key={stage}
+                      type="button"
+                      onClick={() => setStageFilter(stage)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                        stageFilter === stage
+                          ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
+                          : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      {stage}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deals Search Input */}
+              <div className="mb-3 relative">
+                <input
+                  type="text"
+                  placeholder="Filter transactions by account or rep..."
+                  value={dealSearchQuery}
+                  onChange={(e) => setDealSearchQuery(e.target.value)}
+                  className="w-full text-xs px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder:text-slate-400"
+                />
+                {dealSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setDealSearchQuery("")}
+                    className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
 
               {isDataCleared ? (
                 <div className="py-8 text-center text-xs text-slate-400">
                   No active transactions. Ingest datasets or click &quot;Restore Sample Data&quot;.
                 </div>
+              ) : filteredDeals.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 space-y-2">
+                  <p>No transactions match the selected filter criteria.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStageFilter("All");
+                      setDealSearchQuery("");
+                    }}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 underline font-semibold"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {currentModelData.deals.map((deal) => {
+                  {filteredDeals.map((deal) => {
                     const badgeClass =
                       deal.status === "Won"
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"

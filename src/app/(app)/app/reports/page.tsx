@@ -12,26 +12,49 @@ import {
   Printer, 
   AlertCircle 
 } from "lucide-react";
+import { clientCache } from "@/lib/cache/client-cache";
 import { ReportDeckVisualizer } from "@/components/visuals/report-deck-visualizer";
 import { AnalyticalEmptyState } from "@/components/visuals/analytical-empty-state";
 
 export default function ReportsPage() {
-  const [datasets, setDatasets] = useState<any[]>([]);
-  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
+  const [datasets, setDatasets] = useState<any[]>(() => clientCache.datasets || []);
+  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(() => clientCache.activeDatasetId || null);
+  const [activeModel, setActiveModel] = useState<string>(() => clientCache.activeModel || "consolidated");
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!clientCache.datasets);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onModelChange(e: any) {
+      if (e.detail?.model) {
+        setActiveModel(e.detail.model);
+        if (e.detail.datasetId) {
+          setActiveDatasetId(e.detail.datasetId);
+        }
+      }
+    }
+    window.addEventListener("df-model-change", onModelChange);
+    return () => window.removeEventListener("df-model-change", onModelChange);
+  }, []);
 
   useEffect(() => {
     async function loadDatasets() {
       try {
-        setLoading(true);
+        if (!clientCache.datasets) {
+          setLoading(true);
+        }
         const res = await fetch("/api/datasets");
         const data = await res.json();
         if (res.ok && data.datasets?.length > 0) {
+          clientCache.datasets = data.datasets;
           setDatasets(data.datasets);
-          setActiveDatasetId(data.datasets[0].id);
+          const preferredId =
+            clientCache.activeDatasetId && data.datasets.some((d: any) => d.id === clientCache.activeDatasetId)
+              ? clientCache.activeDatasetId
+              : data.datasets[0].id;
+          setActiveDatasetId(preferredId);
+          clientCache.activeDatasetId = preferredId;
         }
       } catch {
         setError("Failed to load datasets");
@@ -162,7 +185,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Visual Report Deck Visualizer */}
-      <ReportDeckVisualizer />
+      <ReportDeckVisualizer activeModel={activeModel} />
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">

@@ -46,9 +46,40 @@ const INSIGHTS: InsightStory[] = [
   }
 ];
 
-export function InsightsStorytelling() {
+const HOUSING_INSIGHTS: InsightStory[] = [
+  {
+    type: "anomaly",
+    title: "Bellevue Townhomes Listing Velocity Spike",
+    metric: "+28.4% Valuation Surge",
+    impact: "+$14.2M Portfolio Equity",
+    confidence: "98.9% Statistical Significance",
+    narrative: "Anomalous listing turnover observed in King County metro corridor. Days-on-market collapsed from 24 to 7 days, indicating severe inventory supply deficit.",
+    action: "Reallocate acquisition liquidity to Bellevue / Redmond parcels"
+  },
+  {
+    type: "forecast",
+    title: "Q4 Regional Real Estate Valuation Model",
+    metric: "$168M Valuation Projected",
+    impact: "108% Target Asset Value",
+    confidence: "95% Confidence Interval ($162M – $174M)",
+    narrative: "Hedonic pricing regression with median square-foot normalization forecasts 7.4% quarter-over-quarter appreciation across multi-family units.",
+    action: "Authorize secondary tranche financing for multi-unit development"
+  },
+  {
+    type: "recommendation",
+    title: "Geospatial Index & Lot Boundary Clustering",
+    metric: "4.8x Faster Geospatial Scans",
+    impact: "74% Compute Latency Reduction",
+    confidence: "Deterministic GIS Indexing",
+    narrative: "DuckDB spatial ST_Intersects queries over housing parcel boundaries showed spatial skew. Generating R-Tree bounding envelopes eliminates 82% of bounding box misses.",
+    action: "Execute Geospatial Bounding Index Build"
+  }
+];
+
+export function InsightsStorytelling({ activeModel }: { activeModel?: string }) {
   const [activeTab, setActiveTab] = useState<number>(0);
-  const current = INSIGHTS[activeTab] ?? INSIGHTS[0]!;
+  const storyList = activeModel === "housing" ? HOUSING_INSIGHTS : INSIGHTS;
+  const current = storyList[activeTab] ?? storyList[0]!;
 
   return (
     <div className="w-full rounded-[24px] bg-white dark:bg-[#101012] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.35)] overflow-hidden">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -19,17 +19,31 @@ import { SystemArchitectureDiagram } from "@/components/visuals/system-architect
 export default function SettingsPage() {
   const [testingDb, setTestingDb] = useState(false);
   const [dbStatus, setDbStatus] = useState<"ok" | "testing">("ok");
-  const [dbLatency, setDbLatency] = useState("0.84ms");
+  const [dbLatency, setDbLatency] = useState("Measuring...");
 
-  const runDbCheck = () => {
+  const runDbCheck = async () => {
     setTestingDb(true);
     setDbStatus("testing");
-    setTimeout(() => {
+    try {
+      const t0 = performance.now();
+      const res = await fetch("/api/health");
+      const elapsed = Math.max(0.5, performance.now() - t0).toFixed(1);
+      if (res.ok) {
+        setDbLatency(`${elapsed}ms`);
+        setDbStatus("ok");
+      } else {
+        setDbLatency("Failed");
+      }
+    } catch {
+      setDbLatency("Unreachable");
+    } finally {
       setTestingDb(false);
-      setDbStatus("ok");
-      setDbLatency(`${(Math.random() * 0.5 + 0.6).toFixed(2)}ms`);
-    }, 800);
+    }
   };
+
+  useEffect(() => {
+    runDbCheck();
+  }, []);
 
   return (
     <div className="space-y-6">

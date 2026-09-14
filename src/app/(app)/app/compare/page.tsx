@@ -50,15 +50,22 @@ export default function ComparePage() {
     }
   }, [activeTab]);
 
-  async function handleDeleteJob(id: string) {
-    if (!confirm("Are you sure you want to delete this comparison run?")) return;
+  const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+  const [isDeletingJob, setIsDeletingJob] = useState(false);
+
+  async function executeDeleteJob() {
+    if (!deletingJobId) return;
+    setIsDeletingJob(true);
     try {
-      const res = await fetch(`/api/compare/jobs/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/compare/jobs/${deletingJobId}`, { method: "DELETE" });
       if (res.ok) {
-        setJobs((prev) => prev.filter((j) => j.id !== id));
+        setJobs((prev) => prev.filter((j) => j.id !== deletingJobId));
+        setDeletingJobId(null);
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsDeletingJob(false);
     }
   }
 
@@ -192,7 +199,7 @@ export default function ComparePage() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => handleDeleteJob(job.id)}
+                          onClick={() => setDeletingJobId(job.id)}
                           className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors"
                           title="Delete Run"
                         >
@@ -261,6 +268,57 @@ export default function ComparePage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Run Confirmation Modal */}
+      {deletingJobId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingJob) setDeletingJobId(null);
+          }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="p-2 rounded-xl bg-rose-500/10">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Comparison Run</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Irreversible operation</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to permanently delete this comparison run? All discrepancy metrics and audit logs for this run will be permanently purged.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isDeletingJob}
+                onClick={() => setDeletingJobId(null)}
+                className="text-xs rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isDeletingJob}
+                onClick={executeDeleteJob}
+                className="gap-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs rounded-xl"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>{isDeletingJob ? "Deleting..." : "Confirm Deletion"}</span>
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

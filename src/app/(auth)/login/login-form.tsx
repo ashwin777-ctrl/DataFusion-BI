@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { loginAction } from "@/lib/auth/actions";
 import { EMPTY_FORM_STATE } from "@/lib/auth/form-state";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,15 @@ export function LoginForm() {
             required
           />
         </Field>
+
+        <div className="flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="text-[12px] text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
         {state.formError ? (
           <p

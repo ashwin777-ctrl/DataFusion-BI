@@ -213,20 +213,28 @@ export default function SourcesPage() {
     }
   }
 
-  async function handleDeleteSource(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete source "${name}"?`)) return;
+  const [deletingSource, setDeletingSource] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  async function executeDeleteSource() {
+    if (!deletingSource) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/sources/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/sources/${deletingSource.id}`, { method: "DELETE" });
       if (res.ok) {
         setSources((prev) => {
-          const next = prev.filter((s) => s.id !== id);
+          const next = prev.filter((s) => s.id !== deletingSource.id);
           clientCache.sources = next;
           return next;
         });
+        setDeletingSource(null);
+      } else {
+        setError("Failed to delete source");
       }
     } catch {
       setError("Failed to delete source");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -578,7 +586,7 @@ export default function SourcesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteSource(src.id, src.alias)}
+                          onClick={() => setDeletingSource({ id: src.id, name: src.alias })}
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -826,6 +834,59 @@ export default function SourcesPage() {
               >
                 <FileCheck className="h-4 w-4" />
                 {syncingTable ? "Ingesting Table..." : "Ingest & Profile Table"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Source Confirmation Modal */}
+      {deletingSource && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setDeletingSource(null);
+          }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="p-2 rounded-xl bg-rose-500/10">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Data Source</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Irreversible operation</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to permanently delete source{" "}
+              <strong className="text-slate-900 dark:text-white font-mono">&quot;{deletingSource.name}&quot;</strong>?
+              Its associated Parquet columnar storage will be purged. Downstream models relying on this table may require reconfiguration.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isDeleting}
+                onClick={() => setDeletingSource(null)}
+                className="text-xs rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isDeleting}
+                onClick={executeDeleteSource}
+                className="gap-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs rounded-xl"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>{isDeleting ? "Deleting..." : "Confirm Deletion"}</span>
               </Button>
             </div>
           </div>

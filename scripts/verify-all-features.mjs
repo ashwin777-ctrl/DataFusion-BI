@@ -96,7 +96,7 @@ async function main() {
 
   console.log("\n=== 6. TEST LOGOUT & REDIRECT ===");
   await page.goto("https://data-fusion-bi.vercel.app/app", { waitUntil: "networkidle" });
-  const logoutBtn = page.locator("form[action*='logout'] button, button[title='Sign out']");
+  const logoutBtn = page.locator("button[aria-label='Sign out'], form[action*='logout'] button, button[title='Sign out']");
   if (await logoutBtn.count() > 0) {
     console.log("Clicking Logout button...");
     await Promise.all([
